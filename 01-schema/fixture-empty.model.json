@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "fixture-empty",
+  "subjectRole": "owner",
+  "profile": {
+    "businessName": "Empty Fixture (not a real company)",
+    "ownerName": "None (fixture)"
+  },
+  "createdAt": "2026-07-10T23:08:25.346Z",
+  "updatedAt": "2026-07-10T23:08:25.346Z",
+  "entities": {
+    "facts": [],
+    "processes": [],
+    "relationships": [],
+    "decisions": [],
+    "judgments": [],
+    "history": [],
+    "systems": [],
+    "commitments": [],
+    "risks": [],
+    "gaps": []
+  }
+}

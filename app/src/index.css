@@ -1,0 +1,84 @@
+/* Successor visual system v1 - conservative, documented in 08-docs/VISUAL-SYSTEM.md */
+:root {
+  --ink: #2b2b2b;
+  --paper: #ffffff;
+  --muted: #5f5f5f;
+  --rule: #dddddd;
+  --accent: #33556e;      /* deep slate - AA on white */
+  --accent-soft: #eef2f5;
+  font-size: 17px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.65;
+}
+
+#root { max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+h1 { font-size: 1.9rem; font-weight: normal; margin-bottom: 0.5rem; }
+h2 { font-size: 1.35rem; font-weight: normal; margin: 1.5rem 0 0.75rem; }
+p  { margin-bottom: 1rem; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+.why {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 1.25rem;
+}
+
+button, .buttonlike {
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--accent);
+  background: var(--paper);
+  border: 1px solid var(--accent);
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  border-radius: 2px;
+}
+button:hover, .buttonlike:hover { background: var(--accent-soft); }
+button.primary { background: var(--accent); color: #ffffff; }
+button.primary:hover { background: #2a465b; }
+button.quiet { border-color: var(--rule); color: var(--muted); }
+button:focus-visible, input:focus-visible, a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+label.field { display: block; margin-bottom: 1.1rem; }
+label.field span { display: block; margin-bottom: 0.25rem; }
+input[type="text"] {
+  font: inherit;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+}
+input[type="text"]:focus { border-color: var(--accent); }
+
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.9rem;
+}
+
+.disclaimer {
+  border-top: 1px solid var(--rule);
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+a { color: var(--accent); }
