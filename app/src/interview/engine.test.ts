@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { RuleBasedEngine, detectUndefinedNames, TRACK_1 } from './engine';
+import { RuleBasedEngine, detectUndefinedNames, trackById } from './engine';
+
+const TRACK_1 = trackById('track-1');
 import { createEmptyModel, validateModel } from '../knowledge-model/model';
 
 /**
@@ -36,7 +38,7 @@ const ANSWERS: string[] = [
 describe('Stage 3 acceptance: Track 1 rule-based interview', () => {
   it('10-answer session: correct extractions, zero fabrication, accurate coverage', () => {
     const engine = new RuleBasedEngine();
-    let state = engine.createState();
+    let state = engine.createMemory();
     let model = createEmptyModel('stage3-accept', {
       businessName: 'Hartwell Machine & Tool (FIXTURE)',
       ownerName: 'Ray Hartwell (fictional)',
@@ -44,11 +46,11 @@ describe('Stage 3 acceptance: Track 1 rule-based interview', () => {
 
     const askedQuestions: string[] = [];
     for (const answer of ANSWERS) {
-      const q = engine.nextQuestion(state);
-      expect(q.complete).toBe(false);
+      const q = engine.nextQuestion(state, 'track-1');
+      expect(q.trackComplete).toBe(false);
       askedQuestions.push(q.question);
-      const result = engine.ingestAnswer(state, model, 'sess_stage3', answer);
-      state = result.state;
+      const result = engine.ingestAnswer(state, model, 'sess_stage3', 'track-1', answer);
+      state = result.memory;
       model = result.model;
     }
 
@@ -88,11 +90,11 @@ describe('Stage 3 acceptance: Track 1 rule-based interview', () => {
     expect(model.entities.risks.some((r) => r.description.includes('Nobody else touches those three things'))).toBe(true);
 
     // --- COVERAGE READOUT ---
-    const q = engine.nextQuestion(state);
+    const q = engine.nextQuestion(state, 'track-1');
     expect(q.coverage.total).toBe(TRACK_1.areas.length);
-    expect(q.coverage.covered).toBe(state.answeredAreas.length);
+    expect(q.coverage.covered).toBe(state.trackProgress['track-1'].answeredAreas.length);
     expect(q.coverage.covered).toBe(5); // daily, weekly, annual, owner-only, first-break
-    expect(q.complete).toBe(false); // three areas remain - honest, not padded
+    expect(q.trackComplete).toBe(false); // three areas remain - honest, not padded
 
     // Every source is attributed to the session.
     const all = [...model.entities.facts];
@@ -104,30 +106,30 @@ describe('Stage 3 acceptance: Track 1 rule-based interview', () => {
 
   it('completes when all areas are covered and queue is empty', () => {
     const engine = new RuleBasedEngine();
-    let state = engine.createState();
+    let state = engine.createMemory();
     let model = createEmptyModel('stage3-complete', {
       businessName: 'X (FIXTURE)', ownerName: 'Y (fixture)',
     });
     // Long, name-free, pattern-free answers so no follow-ups queue.
     const plain = 'We handle that the same way every time and the whole crew already knows the routine well.';
     for (let i = 0; i < TRACK_1.areas.length; i++) {
-      const r = engine.ingestAnswer(state, model, 's', plain);
-      state = r.state; model = r.model;
+      const r = engine.ingestAnswer(state, model, 's', 'track-1', plain);
+      state = r.memory; model = r.model;
     }
-    const q = engine.nextQuestion(state);
-    expect(q.complete).toBe(true);
+    const q = engine.nextQuestion(state, 'track-1');
+    expect(q.trackComplete).toBe(true);
     expect(q.coverage.covered).toBe(TRACK_1.areas.length);
-    expect(state.complete).toBe(true);
+    expect(engine.allComplete(state)).toBe(false); // other tracks remain
   });
 
   it('empty answers extract nothing and fabricate nothing', () => {
     const engine = new RuleBasedEngine();
-    const state = engine.createState();
+    const state = engine.createMemory();
     const model = createEmptyModel('stage3-empty', {
       businessName: 'X (FIXTURE)', ownerName: 'Y (fixture)',
     });
-    const r = engine.ingestAnswer(state, model, 's', '   ');
-    expect(r.extracted).toEqual({ facts: 0, gaps: 0, risks: 0 });
+    const r = engine.ingestAnswer(state, model, 's', 'track-1', '   ');
+    expect(r.extracted).toEqual({ facts: 0, gaps: 0, risks: 0, contradictions: 0 });
     expect(r.model.entities.facts.length).toBe(0);
   });
 
@@ -141,13 +143,13 @@ describe('Stage 3 acceptance: Track 1 rule-based interview', () => {
 
   it('a brief answer queues one gentle probe', () => {
     const engine = new RuleBasedEngine();
-    let state = engine.createState();
+    let state = engine.createMemory();
     let model = createEmptyModel('stage3-short', {
       businessName: 'X (FIXTURE)', ownerName: 'Y (fixture)',
     });
-    const r = engine.ingestAnswer(state, model, 's', 'Same thing every day.');
-    state = r.state; model = r.model;
-    const q = engine.nextQuestion(state);
+    const r = engine.ingestAnswer(state, model, 's', 'track-1', 'Same thing every day.');
+    state = r.memory; model = r.model;
+    const q = engine.nextQuestion(state, 'track-1');
     expect(q.isFollowUp).toBe(true);
     expect(q.question).toContain('say a little more');
     // Verbatim fact still captured, nothing invented:

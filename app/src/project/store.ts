@@ -17,15 +17,59 @@ export interface SessionMeta {
   startedAt: string;
   lastResumedAt: string;
   status: SessionStatus;
-  /** Interview progress for this session (Stage 3+). Optional and additive:
-   *  1.0.0 project files without it remain valid. */
-  interview?: import('../interview/engine').InterviewState;
+  /** Which interview track this session works on (Stage 4+). */
+  trackId?: string;
+  /** This session's transcript (Stage 4+). */
+  transcript?: import('../interview/engine').QA[];
+  /** Legacy Stage 3 per-session state - migrated to project memory on load. */
+  interview?: LegacyInterviewState;
+}
+
+/** Shape of the retired Stage 3 per-session state, kept for migration. */
+interface LegacyInterviewState {
+  trackId: string;
+  answeredAreas: string[];
+  followUpQueue: { areaId: string; question: string; reason: string }[];
+  answerCount: number;
+  transcript: { areaId: string; question: string; answer: string; answeredAt: string }[];
+  knownNames: string[];
+  complete: boolean;
 }
 
 export interface ProjectFile {
   formatVersion: string;
   model: KnowledgeModel;
   sessions: SessionMeta[];
+  /** Project-level interview memory (Stage 4+): threads and coverage
+   *  persist across sessions. Optional and additive. */
+  interviewMemory?: import('../interview/engine').ProjectInterviewMemory;
+}
+
+/** Fold legacy Stage 3 per-session interview state into project memory. */
+export function migrateProject(p: ProjectFile): ProjectFile {
+  const legacySessions = p.sessions.filter((s) => s.interview);
+  if (legacySessions.length === 0) return p;
+  const next: ProjectFile = JSON.parse(JSON.stringify(p));
+  const memory = next.interviewMemory ?? {
+    trackProgress: {}, pendingThreads: [], knownNames: [], answerCount: 0,
+  };
+  for (const s of next.sessions) {
+    const legacy = s.interview;
+    if (!legacy) continue;
+    const prog = memory.trackProgress[legacy.trackId] ?? { answeredAreas: [] };
+    for (const a of legacy.answeredAreas) if (!prog.answeredAreas.includes(a)) prog.answeredAreas.push(a);
+    memory.trackProgress[legacy.trackId] = prog;
+    for (const f of legacy.followUpQueue) {
+      memory.pendingThreads.push({ trackId: legacy.trackId, ...f });
+    }
+    for (const n of legacy.knownNames) if (!memory.knownNames.includes(n)) memory.knownNames.push(n);
+    memory.answerCount += legacy.answerCount;
+    s.trackId = legacy.trackId;
+    s.transcript = legacy.transcript.map((t) => ({ trackId: legacy.trackId, ...t }));
+    delete s.interview;
+  }
+  next.interviewMemory = memory;
+  return next;
 }
 
 /** Storage abstraction so tests can inject an in-memory backend. */
@@ -78,7 +122,7 @@ export class ProjectStore {
     const errors = validateProjectFile(parsed);
     if (errors.length > 0)
       throw new Error('Saved project failed validation: ' + errors.map((e) => `${e.path}: ${e.message}`).join('; '));
-    return parsed as ProjectFile;
+    return migrateProject(parsed as ProjectFile);
   }
 
   list(): { projectId: string; businessName: string; updatedAt: string; sessionCount: number }[] {
@@ -119,7 +163,7 @@ export class ProjectStore {
     const errors = validateProjectFile(parsed);
     if (errors.length > 0)
       throw new Error('Import failed validation: ' + errors.map((e) => `${e.path}: ${e.message}`).join('; '));
-    const project = parsed as ProjectFile;
+    const project = migrateProject(parsed as ProjectFile);
     this.save(project);
     return project;
   }

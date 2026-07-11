@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { RuleBasedEngine, TRACK_1, type InterviewState } from './engine';
+import { RuleBasedEngine, TRACKS, trackById } from './engine';
 import type { ProjectFile, SessionMeta } from '../project/store';
 
 export default function InterviewScreen({
@@ -11,63 +11,106 @@ export default function InterviewScreen({
   onBack: () => void;
 }) {
   const engine = useMemo(() => new RuleBasedEngine(), []);
-  const [state, setState] = useState<InterviewState>(
-    () => session.interview ?? engine.createState(),
-  );
+  const [trackId, setTrackId] = useState<string | null>(session.trackId ?? null);
   const [answer, setAnswer] = useState('');
-  const [lastExtract, setLastExtract] = useState<string>('');
+  const [lastExtract, setLastExtract] = useState('');
+  const [revisitAreaId, setRevisitAreaId] = useState<string | null>(null);
 
-  const q = engine.nextQuestion(state);
+  const memory = project.interviewMemory ?? engine.createMemory();
+
+  if (!trackId) {
+    return (
+      <section>
+        <button className="quiet" onClick={onBack}>← Back to sessions</button>
+        <h1 style={{ marginTop: '1rem' }}>Choose a part of the interview</h1>
+        <p className="why">
+          Why parts: the interview covers eight parts of how you run the
+          business. Do them in any order, one sitting at a time. Anything
+          left unanswered is remembered and asked again later - nothing
+          gets lost between sittings.
+        </p>
+        {TRACKS.map((t) => {
+          const c = engine.coverage(memory, t.id);
+          const threads = memory.pendingThreads.filter((f) => f.trackId === t.id).length;
+          return (
+            <div className="card" key={t.id}>
+              <p style={{ marginBottom: '0.35rem' }}>{t.n}. {t.title}</p>
+              <p className="small muted" style={{ marginBottom: '0.6rem' }}>
+                {c.covered} of {c.total} covered
+                {threads > 0 ? ` · ${threads} follow-up${threads === 1 ? '' : 's'} waiting` : ''}
+              </p>
+              <button onClick={() => {
+                setTrackId(t.id);
+                if (session.trackId !== t.id) {
+                  onSave({
+                    ...project,
+                    sessions: project.sessions.map((s) =>
+                      s.id === session.id ? { ...s, trackId: t.id } : s),
+                  });
+                }
+              }}>
+                {c.covered === 0 ? 'Begin' : c.covered === c.total ? 'Review' : 'Continue'}
+              </button>
+            </div>
+          );
+        })}
+      </section>
+    );
+  }
+
+  const track = trackById(trackId);
+  const q = engine.nextQuestion(memory, trackId);
+  const questionText = revisitAreaId ? engine.revisitQuestion(trackId, revisitAreaId) : q.question;
+  const showInput = revisitAreaId !== null || q.areaId !== 'done';
 
   const submit = () => {
     if (!answer.trim()) return;
-    const result = engine.ingestAnswer(state, project.model, session.id, answer);
+    const result = engine.ingestAnswer(
+      memory, project.model, session.id, trackId, answer, revisitAreaId ?? undefined,
+    );
     const nextProject: ProjectFile = {
       ...project,
       model: result.model,
+      interviewMemory: result.memory,
       sessions: project.sessions.map((s) =>
-        s.id === session.id ? { ...s, interview: result.state } : s,
+        s.id === session.id
+          ? { ...s, trackId, transcript: [...(s.transcript ?? []), result.qa] }
+          : s,
       ),
     };
-    setState(result.state);
     setAnswer('');
-    const { facts, gaps, risks } = result.extracted;
+    setRevisitAreaId(null);
+    const { facts, gaps, risks, contradictions } = result.extracted;
     const parts: string[] = [];
     if (facts) parts.push(`${facts} answer captured in your words`);
-    if (gaps) parts.push(`${gaps} name${gaps === 1 ? '' : 's'} we will ask about`);
+    if (contradictions) parts.push('an earlier answer says something different - we will ask which is right');
+    if (gaps - contradictions > 0) parts.push(`${gaps - contradictions} name${gaps - contradictions === 1 ? '' : 's'} we will ask about`);
     if (risks) parts.push(`${risks} thing${risks === 1 ? '' : 's'} only you handle, noted`);
     setLastExtract(parts.join(' · '));
     onSave(nextProject);
   };
 
-  const captured = project.model.entities;
+  const answeredAreas = memory.trackProgress[trackId]?.answeredAreas ?? [];
 
   return (
     <section>
-      <button className="quiet" onClick={onBack}>← Back to sessions</button>
-      <h1 style={{ marginTop: '1rem' }}>{TRACK_1.title}</h1>
-      <p className="why">
-        Why this interview: this part captures what you actually do - the
-        day, the week, the year - so a successor can see the business from
-        your chair. Answer in your own words; everything is saved exactly as
-        you say it. Take your time, and stop whenever you like.
-      </p>
-
+      <button className="quiet" onClick={() => setTrackId(null)}>← All parts</button>
+      <h1 style={{ marginTop: '1rem' }}>{track.title}</h1>
       <p className="small muted">
         {q.coverage.covered} of {q.coverage.total} areas covered
-        {state.followUpQueue.length > 0
-          ? ` · ${state.followUpQueue.length} follow-up${state.followUpQueue.length === 1 ? '' : 's'} waiting`
+        {memory.pendingThreads.length > 0
+          ? ` · ${memory.pendingThreads.length} follow-up${memory.pendingThreads.length === 1 ? '' : 's'} waiting overall`
           : ''}
       </p>
 
       <div className="card" style={{ marginTop: '0.75rem' }}>
-        {q.isFollowUp && q.reason && (
+        {!revisitAreaId && q.isFollowUp && q.reason && (
           <p className="small muted" style={{ marginBottom: '0.5rem' }}>
-            A follow-up: {q.reason}
+            A follow-up{q.fromTrackTitle ? ` from "${q.fromTrackTitle}"` : ''}: {q.reason}
           </p>
         )}
-        <p style={{ marginBottom: q.complete ? 0 : '0.9rem' }}>{q.question}</p>
-        {!q.complete && (
+        <p style={{ marginBottom: showInput ? '0.9rem' : 0 }}>{questionText}</p>
+        {showInput && (
           <>
             <textarea
               value={answer}
@@ -81,6 +124,9 @@ export default function InterviewScreen({
             />
             <div className="row" style={{ marginTop: '0.75rem' }}>
               <button className="primary" onClick={submit}>That's my answer</button>
+              {revisitAreaId && (
+                <button className="quiet" onClick={() => setRevisitAreaId(null)}>Never mind</button>
+              )}
               <span className="small muted">Saved to this computer the moment you submit.</span>
             </div>
           </>
@@ -89,9 +135,29 @@ export default function InterviewScreen({
 
       {lastExtract && <p className="small muted">{lastExtract}</p>}
 
+      {answeredAreas.length > 0 && !revisitAreaId && (
+        <details style={{ marginTop: '1.25rem' }}>
+          <summary className="small muted" style={{ cursor: 'pointer' }}>
+            Revisit a question you already answered
+          </summary>
+          <p className="why" style={{ marginTop: '0.5rem' }}>
+            Why revisit: memories sharpen, and second answers are often
+            better ones. If a new answer differs from the old, we will show
+            you both and ask which is right.
+          </p>
+          {track.areas.filter((a) => answeredAreas.includes(a.id)).map((a) => (
+            <div className="card" key={a.id}>
+              <p className="small" style={{ marginBottom: '0.5rem' }}>{a.question}</p>
+              <button className="quiet" onClick={() => setRevisitAreaId(a.id)}>Answer again</button>
+            </div>
+          ))}
+        </details>
+      )}
+
       <p className="small muted" style={{ marginTop: '1.5rem' }}>
-        Captured so far in this project: {captured.facts.length} answers,{' '}
-        {captured.gaps.length} open questions, {captured.risks.length} noted risks.
+        Captured so far in this project: {project.model.entities.facts.length} answers,{' '}
+        {project.model.entities.gaps.length} open questions,{' '}
+        {project.model.entities.risks.length} noted risks.
       </p>
     </section>
   );

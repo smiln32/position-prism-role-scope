@@ -108,3 +108,23 @@ authorized once Carla supplies a key (claude-haiku-4-5 recommended, key
 held in memory only, never stored - this product never stores credentials).
 Rule-based engine remains the no-key fallback. See 00-control/HANDOFF.md. |
 Approved.
+
+2026-07-10 | Handoff amendment | Carla directed Stage 4 to be built here in
+the chat environment ("Start on stage four next"), superseding the immediate
+Claude Code move. HANDOFF.md remains valid for whenever the move happens;
+zip delivery resumes for this stage. | Approved.
+
+2026-07-10 | Stage 4 | Interview memory moves from per-session to
+project level (ProjectInterviewMemory: trackProgress, pendingThreads,
+knownNames, answerCount) so unresolved threads persist and are revisited
+across sessions. SessionMeta keeps a per-session transcript and gains
+trackId. Legacy Stage 3 session.interview state is migrated automatically
+on load. Additive optional fields; project format stays 1.0.0. | Done.
+
+2026-07-10 | Stage 4 | Contradiction detection (rule-based): any covered
+area can be revisited in a later session; if the new answer differs from
+the stored answer for that track+area (normalized text compare), the engine
+creates a contradiction Gap quoting BOTH answers verbatim and queues a
+"which is right?" thread. This may flag complementary re-answers as well as
+true conflicts - asking "which is right, or are both true?" is safe either
+way, and conservative beats silent. | Done.
