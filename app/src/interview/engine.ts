@@ -198,7 +198,30 @@ export function detectUndefinedNames(answer: string, known: string[]): string[] 
 
 const normText = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
 
-export class RuleBasedEngine {
+/**
+ * The contract every interview engine honors. Methods that a networked
+ * engine must perform asynchronously return `T | Promise<T>` so the
+ * synchronous rule-based engine satisfies the same interface without change;
+ * callers `await` the result either way. The rule-based engine is the
+ * always-available default and the no-key fallback (see DECISIONS.md).
+ */
+export interface InterviewEngine {
+  createMemory(): ProjectInterviewMemory;
+  coverage(memory: ProjectInterviewMemory, trackId: string): { covered: number; total: number };
+  allComplete(memory: ProjectInterviewMemory): boolean;
+  revisitQuestion(trackId: string, areaId: string): string;
+  nextQuestion(memory: ProjectInterviewMemory, trackId: string): NextQuestion | Promise<NextQuestion>;
+  ingestAnswer(
+    memory: ProjectInterviewMemory,
+    model: KnowledgeModel,
+    sessionId: string,
+    trackId: string,
+    answer: string,
+    revisitAreaId?: string,
+  ): IngestResult | Promise<IngestResult>;
+}
+
+export class RuleBasedEngine implements InterviewEngine {
   createMemory(): ProjectInterviewMemory {
     return { trackProgress: {}, pendingThreads: [], knownNames: [], answerCount: 0 };
   }

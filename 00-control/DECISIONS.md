@@ -238,3 +238,52 @@ changes only the human-facing MergeReport labeling, not merge semantics
 frozen Stage 1 schema. Added a regression test asserting a newer timestamp
 with identical content reports 'unchanged'. Branch
 maintenance/merge-report-timestamp-fix, awaiting Carla's review. | Proposed.
+
+2026-07-10 | Review fix F2 (Claude Code) | App.tsx session button keyed off the
+legacy `s.interview` field, which migrateProject strips on load, so it always
+read "Begin interview". Now keys off `s.transcript?.length`. Cosmetic label
+only; the interview itself already resumed correctly. Branch
+feature/llm-interview-adapter. | Proposed.
+
+2026-07-10 | LLM interview adapter (Claude Code, authorized in HANDOFF.md) |
+Built the deferred Anthropic adapter behind a new InterviewEngine interface
+(engine.ts) that both engines implement; the interface methods return
+`T | Promise<T>` so the sync RuleBasedEngine satisfies it unchanged and the
+async LlmInterviewEngine also fits. app/src/interview/llm.ts:
+createAnthropicClient (fetch-based, no SDK, injectable transport; model
+claude-haiku-4-5; headers x-api-key + anthropic-version 2023-06-01 +
+anthropic-dangerous-direct-browser-access; forced tool_choice for structured
+extraction) and LlmInterviewEngine.
+INTEGRITY DESIGN (the load-bearing part): the model never controls the
+knowledge model's structure or coverage bookkeeping. RuleBasedEngine still
+chooses the next area and still writes the owner's answer verbatim as the
+high-confidence Fact plus the same name-gaps and single-person risks - that
+"floor" is produced first and returned unchanged on any failure or with no
+key. The model is used only to (a) reword the next question warmly without
+changing which area is asked, and (b) propose structured processes/decisions/
+relationships. Every proposed entity is source kind 'inferred', confidence
+'low', verified=false, so deliverables render it "(needs verification) (low
+confidence)" and it can never pass as the owner's words; the verbatim Fact is
+always kept alongside. This EXTENDS the Stage 3/5 policy ("Gaps and Risks are
+the only inferred entities") to inferred structured entities - a deliberate,
+logged policy extension, gated OFF by default (only active with a user key +
+opt-in), so default product behavior and every existing guarantee are
+unchanged. Rule 11 honored: the key is held in memory only (React state, read
+through a ref), never written to the project file or localStorage.
+Testing: app/src/interview/llm.test.ts (11 tests) exercises the fetch client
+(no-key throw before any request, fresh-key-per-call, required headers/model/
+forced tool_choice, error surfacing) and the engine (question reword keeps the
+rule-chosen area, falls back on failure; ingest keeps the verbatim floor and
+adds inferred/low/unverified entities that still validate against the frozen
+contract; empty-name entities dropped; unknown category coerced to 'other';
+extraction failure returns the untouched floor; empty answer never calls the
+model). 68/68 tests, clean build+lint.
+UI: memory-only key panel on Home (password field, "for this visit only",
+turn-off-and-forget); InterviewScreen keeps synchronous rule-based question
+display and routes only the ingest step through the injected engine (async
+confined to submit, with a Saving state) so the default path is unchanged.
+NOT YET VERIFIED: the live network path and the browser UI need a real key +
+a browser to exercise end-to-end (this environment has neither) - the engine
+logic is fully unit-tested against a fake transport; the fetch call itself and
+the async UI are code-complete and type-checked but browser-unverified. Branch
+feature/llm-interview-adapter, awaiting Carla's review + a key. | Proposed.

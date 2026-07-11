@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import ModelInspector from './ModelInspector';
 import InterviewScreen from './interview/InterviewScreen';
+import { LlmInterviewEngine, createAnthropicClient } from './interview/llm';
+import type { InterviewEngine } from './interview/engine';
 import DocumentsScreen from './analysis/DocumentsScreen';
 import DeliverablesScreen from './deliverables/DeliverablesScreen';
 import DashboardScreen from './dashboard/DashboardScreen';
@@ -48,10 +50,25 @@ export default function App() {
   const [refresh, setRefresh] = useState(0);
   const bump = () => setRefresh((n) => n + 1);
 
+  // The API key lives in memory only - never written to a project file or
+  // localStorage (it is a credential; this product never stores credentials).
+  // The client reads it fresh through a ref, so the key is never captured.
+  const [assistOn, setAssistOn] = useState(false);
+  const apiKeyRef = useRef<string | null>(null);
+  const assistEngine = useMemo<InterviewEngine | undefined>(
+    () => (assistOn ? new LlmInterviewEngine(createAnthropicClient(() => apiKeyRef.current)) : undefined),
+    [assistOn],
+  );
+  const setKey = (key: string | null) => {
+    apiKeyRef.current = key && key.trim() ? key.trim() : null;
+    setAssistOn(apiKeyRef.current !== null);
+  };
+
   return (
     <main>
       {screen.name === 'home' && (
-        <HomeScreen key={refresh} store={store} go={setScreen} />
+        <HomeScreen key={refresh} store={store} go={setScreen}
+          assistOn={assistOn} onSetKey={setKey} />
       )}
       {screen.name === 'new-project' && (
         <NewProjectScreen store={store} go={setScreen} />
@@ -63,7 +80,7 @@ export default function App() {
       {screen.name === 'interview' && (
         <InterviewRoute key={`${screen.projectId}-${screen.sessionId}`} store={store}
           projectId={screen.projectId} sessionId={screen.sessionId}
-          go={setScreen} changed={bump} />
+          go={setScreen} changed={bump} assistEngine={assistEngine} />
       )}
       {screen.name === 'documents' && (
         <DocumentsRoute key={`docs-${screen.projectId}-${refresh}`} store={store}
@@ -88,8 +105,12 @@ export default function App() {
   );
 }
 
-function HomeScreen({ store, go }: { store: ProjectStore; go: (s: Screen) => void }) {
+function HomeScreen({ store, go, assistOn, onSetKey }: {
+  store: ProjectStore; go: (s: Screen) => void;
+  assistOn: boolean; onSetKey: (key: string | null) => void;
+}) {
   const [error, setError] = useState('');
+  const [keyDraft, setKeyDraft] = useState('');
   const projects = store.list();
 
   const onImport = async (f: File | undefined) => {
@@ -145,7 +166,38 @@ function HomeScreen({ store, go }: { store: ProjectStore; go: (s: Screen) => voi
       </div>
       {error && <p className="small" style={{ color: '#8b2f2f', marginTop: '0.75rem' }}>{error}</p>}
 
-      <p className="small muted" style={{ marginTop: '2.5rem' }}>
+      <details style={{ marginTop: '2.5rem' }}>
+        <summary className="small muted" style={{ cursor: 'pointer' }}>
+          Assisted interviewing {assistOn ? '(on)' : '(off)'}
+        </summary>
+        <p className="why" style={{ marginTop: '0.5rem' }}>
+          Optional. With your own Anthropic API key, the interview can draft
+          richer follow-up notes - always in addition to your exact words, and
+          always marked "needs verification" for you to confirm. The key is
+          held in memory for this visit only. It is never saved to this
+          computer or to your project file, and it leaves nothing behind when
+          you close the app.
+        </p>
+        {assistOn ? (
+          <div className="row">
+            <span className="small">A key is set for this visit.</span>
+            <button className="quiet" onClick={() => { onSetKey(null); setKeyDraft(''); }}>
+              Turn off and forget the key
+            </button>
+          </div>
+        ) : (
+          <div className="row">
+            <input type="password" placeholder="sk-ant-…" value={keyDraft}
+              autoComplete="off" style={{ maxWidth: '20rem' }}
+              onChange={(e) => setKeyDraft(e.target.value)} />
+            <button onClick={() => onSetKey(keyDraft)} disabled={!keyDraft.trim()}>
+              Use this key for this visit
+            </button>
+          </div>
+        )}
+      </details>
+
+      <p className="small muted" style={{ marginTop: '1.5rem' }}>
         <a href="#inspector" onClick={(e) => { e.preventDefault(); go({ name: 'inspector' }); }}>
           Model inspector
         </a>{' '}
@@ -290,7 +342,7 @@ function ProjectScreen({
               apply(resumeSession(project, s.id));
               go({ name: 'interview', projectId, sessionId: s.id });
             }}>
-              {s.interview ? 'Continue interview' : 'Begin interview'}
+              {(s.transcript?.length ?? 0) > 0 ? 'Continue interview' : 'Begin interview'}
             </button>
             <button className="quiet" onClick={() => apply(endSession(project, s.id))}>End session</button>
           </div>
@@ -361,10 +413,10 @@ function ProjectScreen({
 }
 
 function InterviewRoute({
-  store, projectId, sessionId, go, changed,
+  store, projectId, sessionId, go, changed, assistEngine,
 }: {
   store: ProjectStore; projectId: string; sessionId: string;
-  go: (s: Screen) => void; changed: () => void;
+  go: (s: Screen) => void; changed: () => void; assistEngine?: InterviewEngine;
 }) {
   const [project, setProject] = useState<ProjectFile | null>(() => {
     try { return store.load(projectId); } catch { return null; }
@@ -390,6 +442,7 @@ function InterviewRoute({
     <InterviewScreen
       project={project}
       session={session}
+      assistEngine={assistEngine}
       onSave={(next) => {
         next.model.updatedAt = new Date().toISOString();
         store.save(next);

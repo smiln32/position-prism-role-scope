@@ -1,21 +1,30 @@
 import { useMemo, useState } from 'react';
-import { RuleBasedEngine, TRACKS, trackById } from './engine';
+import { RuleBasedEngine, TRACKS, trackById, type InterviewEngine } from './engine';
 import type { ProjectFile, SessionMeta } from '../project/store';
 
 export default function InterviewScreen({
-  project, session, onSave, onBack,
+  project, session, onSave, onBack, assistEngine,
 }: {
   project: ProjectFile;
   session: SessionMeta;
   onSave: (next: ProjectFile) => void;
   onBack: () => void;
+  /** Optional Anthropic-backed engine; when absent the interview runs fully
+   *  on the deterministic rule-based engine (the no-key default). */
+  assistEngine?: InterviewEngine;
 }) {
+  // The deterministic engine drives question display and coverage (always
+  // synchronous). Answer capture routes through the assist engine when present
+  // - it still writes the owner's verbatim answer first, then adds labeled
+  // inferred structure on top.
   const engine = useMemo(() => new RuleBasedEngine(), []);
+  const ingestEngine: InterviewEngine = assistEngine ?? engine;
   const [trackId, setTrackId] = useState<string | null>(session.trackId ?? null);
   const [answer, setAnswer] = useState('');
   const [lastExtract, setLastExtract] = useState('');
   const [revisitAreaId, setRevisitAreaId] = useState<string | null>(null);
   const [nudge, setNudge] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const memory = project.interviewMemory ?? engine.createMemory();
 
@@ -64,15 +73,21 @@ export default function InterviewScreen({
   const questionText = revisitAreaId ? engine.revisitQuestion(trackId, revisitAreaId) : q.question;
   const showInput = revisitAreaId !== null || q.areaId !== 'done';
 
-  const submit = () => {
+  const submit = async () => {
     if (!answer.trim()) {
       setNudge('Take your time - whenever you are ready, write your answer above and submit it.');
       return;
     }
     setNudge('');
-    const result = engine.ingestAnswer(
-      memory, project.model, session.id, trackId, answer, revisitAreaId ?? undefined,
-    );
+    setSaving(true);
+    let result;
+    try {
+      result = await ingestEngine.ingestAnswer(
+        memory, project.model, session.id, trackId, answer, revisitAreaId ?? undefined,
+      );
+    } finally {
+      setSaving(false);
+    }
     const nextProject: ProjectFile = {
       ...project,
       model: result.model,
@@ -128,11 +143,17 @@ export default function InterviewScreen({
               aria-label="Your answer"
             />
             <div className="row" style={{ marginTop: '0.75rem' }}>
-              <button className="primary" onClick={submit}>That's my answer</button>
-              {revisitAreaId && (
+              <button className="primary" onClick={submit} disabled={saving}>
+                {saving ? 'Saving…' : "That's my answer"}
+              </button>
+              {revisitAreaId && !saving && (
                 <button className="quiet" onClick={() => setRevisitAreaId(null)}>Never mind</button>
               )}
-              <span className="small muted">Saved to this computer the moment you submit.</span>
+              <span className="small muted">
+                {assistEngine
+                  ? 'Your words are saved verbatim; assisted notes are added and marked for your review.'
+                  : 'Saved to this computer the moment you submit.'}
+              </span>
             </div>
           </>
         )}

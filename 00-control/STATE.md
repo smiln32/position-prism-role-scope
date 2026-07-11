@@ -68,6 +68,25 @@ new logged decisions.
   pure timestamp bump reports 'unchanged' not 'updated'; +1 regression test.
   Report-labeling only; merge semantics and frozen schema untouched. See
   DECISIONS.md 2026-07-10 Maintenance entry.
+- FEATURE (branch feature/llm-interview-adapter, awaiting review + a key):
+  the deferred Anthropic interview adapter is built and unit-tested.
+  * engine.ts adds the InterviewEngine interface (T | Promise<T> methods);
+    RuleBasedEngine implements it unchanged; docs' long-standing "engine sits
+    behind the InterviewEngine interface" claim is now true in code.
+  * app/src/interview/llm.ts - createAnthropicClient (fetch-based, injectable,
+    claude-haiku-4-5, browser CORS header, forced tool_choice) + LlmInterview-
+    Engine. Deterministic floor (verbatim Fact + gaps + risks + coverage) runs
+    first and unchanged; the model only rewords questions and proposes
+    inferred/low-confidence/unverified processes, decisions, relationships on
+    top. Fails safe to the floor. Key held in memory only, never persisted.
+  * app/src/interview/llm.test.ts - 11 tests (transport + engine + guardrails).
+  * App.tsx - memory-only key panel; InterviewScreen keeps sync question
+    display and awaits the injected engine only for ingest (Saving state).
+  * NOT browser-verified: live network + async UI need a real key + a browser,
+    neither available here. Engine logic fully covered by the fake-transport
+    tests. Also folds in review fix F2 (stale interview-button label).
+  * Full suite here: 68 tests passing; clean build + lint. See DECISIONS.md
+    2026-07-10 "LLM interview adapter" entry.
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 

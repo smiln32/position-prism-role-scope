@@ -3,11 +3,26 @@
 ## Architecture
 
 The engine sits behind the InterviewEngine interface
-(app/src/interview/engine.ts). The shipped implementation is
-RuleBasedEngine: deterministic, free, offline, fully testable.
-An LLM-backed adapter (Anthropic API, Haiku-class, user-supplied key)
-may be added later behind the same interface - deferred per
-DECISIONS.md 2026-07-10.
+(app/src/interview/engine.ts). Its methods return `T | Promise<T>` so a
+synchronous and an asynchronous engine share one contract. The default
+implementation is RuleBasedEngine: deterministic, free, offline, fully
+testable - and the no-key fallback.
+
+An optional Anthropic-backed adapter (LlmInterviewEngine in
+app/src/interview/llm.ts, claude-haiku-4-5, user-supplied key) implements
+the same interface. It never controls the model's structure or coverage:
+the rule-based engine still writes the owner's answer verbatim as the
+high-confidence Fact and still does the deterministic gap/risk detection
+(the "floor"). On top of that floor the model only (a) rewords the next
+question warmly without changing which area is asked, and (b) proposes
+structured processes/decisions/relationships - each stored source
+'inferred', confidence 'low', verified=false, so every deliverable marks
+it "(needs verification) (low confidence)" and it can never pass as the
+owner's own words. Any failure or missing key returns the untouched floor.
+The API key is held in memory only and is never written anywhere (rule 11).
+Tests: app/src/interview/llm.test.ts. Logged in DECISIONS.md 2026-07-10
+("LLM interview adapter"). The live network path needs a real key + a
+browser to exercise end-to-end.
 
 ## The eight tracks
 

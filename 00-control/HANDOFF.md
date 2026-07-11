@@ -23,14 +23,15 @@ Role DNA schema sharing, cloud sync, or maintenance.
   per gate minimum, message = the gate name.
 - BROWSER TESTING: a real browser is available. Stage gate evidence should
   include actual screenshots from `npm run dev` where the spec asks for them.
-- API ADAPTER NOW IN SCOPE: the deferred Anthropic API interview adapter
-  (DECISIONS.md 2026-07-10) is authorized once Carla supplies an API key.
-  Recommended: claude-haiku-4-5, key entered by the user in-app and held in
-  memory only (never written to the project file or localStorage - it is a
-  credential, and this product never stores credentials). Build it behind
-  the existing InterviewEngine interface; the rule-based engine remains the
-  no-key fallback. Build it behind the existing
-  InterviewEngine interface as a new logged decision.
+- API ADAPTER: BUILT on branch feature/llm-interview-adapter (DECISIONS.md
+  2026-07-10 "LLM interview adapter"), pending Carla's review and a live key.
+  claude-haiku-4-5, key entered in-app and held in memory only (never written
+  to the project file or localStorage). Sits behind the InterviewEngine
+  interface; the rule-based engine remains the no-key fallback and still
+  produces the verbatim "floor" of every answer. Engine logic is unit-tested
+  against a fake transport (llm.test.ts); the live network call and the async
+  UI still need a real key + a browser to exercise end-to-end - do that before
+  merging.
 
 ## Verifying the baseline (Claude Code, before any Stage 4 work)
 
