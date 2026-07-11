@@ -63,6 +63,22 @@ new logged decisions.
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
 - Test suite: 56 tests passing (+1 end-to-end acceptance run)
+- FEATURE (branch feature/structured-knowledge-capture, off master, awaiting
+  review): three post-review improvements. 73 tests, clean build + lint.
+  * app/src/knowledge-model/capture.ts - pure, tested add/edit functions for
+    the entity types the interview never creates (relationships, decisions,
+    processes, judgments, history, systems, commitments) + patchEntity +
+    setVerified. Owner-entered = source 'interview'/"entered directly",
+    confidence high, verified true. Closes the gap where the Relationship Map,
+    Decision Playbook, and Memory Archive rendered mostly "Not yet captured".
+  * app/src/knowledge-model/KnowledgeScreen.tsx - "Everything on record":
+    browse + add + inline-edit + confirm, wired as the 'knowledge' screen with
+    a "Review & add knowledge" button on the project screen.
+  * Component-test harness: jsdom + @testing-library/react/dom (dev deps),
+    per-file `@vitest-environment jsdom`. KnowledgeScreen.test.tsx (5) and
+    App.test.tsx (2, first coverage of App.tsx). Genuinely browser-verified
+    via real DOM render + events. See DECISIONS.md 2026-07-10 "Post-review
+    improvements".
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 
