@@ -218,3 +218,10 @@ answer nudge in interviews, "model" jargon removed from a user-facing
 button, 08-docs HELP.md and DISCLAIMER.md written. Acceptance run is a
 standing automated test (07-testing/acceptance.test.ts, mirrored in
 app/src) so the Definition of Done is re-proven on every test run. | Done.
+
+2026-07-10 | Build review | Carla requested a full cohesion/consistency
+review. Findings and fixes in 07-testing/build-review.md: HANDOFF.md
+de-staled to govern future work; boilerplate app/README.md replaced;
+package renamed successor-app; topic-convention note added to the schema
+README. Frozen contract, control-file accuracy, integrity semantics,
+disclaimer, voice, and navigation all verified consistent. | Done.

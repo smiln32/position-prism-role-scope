@@ -53,6 +53,15 @@ detail?, capturedAt }
 | risks | risk | description, impact, riskKind, mitigation? |
 | gaps | gap | question, raisedBecause, status (open/queued/resolved), relatedIds[] |
 
+## Topic conventions (note added at build review)
+
+Two fact.topic conventions coexist by design: interview-captured facts use
+"track-N:areaId" (Stage 4 convention); document-captured facts use
+"document:docId"; free-text topics (as in the Stage 1 fixture) are also
+valid. The Successor's Handbook renders all three - track topics under
+their questions, document facts under their own section, and anything else
+under "Other knowledge on record" - so no captured fact can fall through.
+
 ## Validation rules
 
 - schemaVersion must equal 1.0.0

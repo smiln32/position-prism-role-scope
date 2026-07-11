@@ -1,32 +1,21 @@
-# React + TypeScript + Vite
+# Successor - application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Business Owner Knowledge Succession Platform. React + TypeScript + Vite,
+local-first (localStorage), no backend, no telemetry.
 
-Currently, two official plugins are available:
+## Commands
+- `npm install` - once
+- `npm run dev` - run locally
+- `npm run build` - typecheck + production build
+- `npm test` - full suite including the end-to-end acceptance run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Where things live
+- `src/knowledge-model/` - the frozen v1.0.0 schema contract (see 01-schema/)
+- `src/project/` - project file, storage, sessions, migration
+- `src/interview/` - the eight-track rule-based interview engine
+- `src/analysis/` - document extraction and conflict surfacing
+- `src/deliverables/` - the nine-document succession package renderers
+- `src/dashboard/` - metrics, risk scoring, gap resolution
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The build's governing documents are in `../00-control/`. Read CLAUDE.md
+before changing anything.
