@@ -177,3 +177,34 @@ Version and generation date print in every document header. | Done.
 full-package markdown download, model JSON (deliverable 9), and a
 print-friendly view using the app's serif visual system via the browser's
 print function. | Done.
+
+2026-07-10 | Gate | Stage 6 delivered; Carla directed "Stage 7". Authorized. |
+Logged.
+
+2026-07-10 | Stage 7 | Risk scoring (deterministic, 0-100): base 40;
++25 if riskKind names a single point of failure; +20 if no mitigation is
+on record; +10 if unverified; +5/-0/-5 for high/medium/low confidence in
+the risk itself; capped at 100. Bands: 70+ high, 40-69 medium, under 40
+low. The formula is printed in the Risk Report so owners and advisors can
+see exactly why a number is what it is - no black box. | Done.
+
+2026-07-10 | Stage 7 | Dashboard metrics: completeness (areas covered of
+44, per track), risks (count, bands, average score), gaps (open/queued/
+resolved), verification (verified vs unverified), freshness (days since
+newest capture; items older than 90 days counted stale). Reconciliation is
+a standing test: every dashboard number is independently recounted from
+raw model JSON and must match exactly. | Done.
+
+2026-07-10 | Stage 7 | Gap resolution is owner-directed from the dashboard:
+"Mark resolved" sets status resolved and updates the timestamp; nothing is
+deleted. This also serves as the contradiction-resolution home noted at the
+Stage 4 gate. | Done.
+
+2026-07-10 | Stage 7 | Gate evidence substitution (precedent: Stage 2): no
+browser here for dashboard screenshots; the reconciliation table is
+generated programmatically by the real code and the dashboard can be
+screenshotted from the delivered zip. | Logged.
+
+2026-07-10 | Correction | Earlier Stage 7 decision text said "44 areas";
+the true total is 50 (Track 1 has 8 areas, Tracks 2-8 have 6 each). The
+reconciliation test asserts 50. Noting rather than editing history. | Logged.

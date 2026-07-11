@@ -1,11 +1,10 @@
 # STATE.md - Project State
 
 Last updated: 2026-07-10
-Current stage: Stage 6 (Deliverable Generation) - COMPLETE
-Next stage: Stage 7 (Risk Scoring, Gap Dashboard & AI Export) - authorized
-under the logged spec amendment. Note: the AI export deliverable exists
-(Stage 6, #9); Stage 7 adds scoring logic, the dashboard, and export
-validation against the schema. HANDOFF.md remains valid if/when moving.
+Current stage: Stage 7 (Risk Scoring, Gap Dashboard & AI Export) - COMPLETE
+Next stage: Stage 8 (Hardening & Acceptance) - the final stage. Full
+regression, accessibility audit, empty/error states, copy polish, and the
+end-to-end acceptance run against the Definition of Done.
 
 ## What exists right now
 
@@ -52,7 +51,14 @@ validation against the schema. HANDOFF.md remains valid if/when moving.
   with read view, per-doc + package markdown download, model JSON download,
   print view; 05-deliverables/README.md; generated fixture package with
   audit summary in 07-testing/stage6-package/
-- Test suite: 48 tests passing (+8 deliverables)
+- STAGE 7: app/src/dashboard/metrics.ts - published risk-scoring formula
+  with per-risk reasons; computeMetrics (completeness of 50 areas, risk
+  bands, gap statuses, verification, freshness with 90-day stale flag);
+  resolveGap owner-directed; DashboardScreen "Where things stand"; Risk
+  Report deliverable now prints scores + reasons; 04-model-views/README.md
+- 07-testing/stage7-acceptance.md - exact reconciliation table + export
+  validation evidence
+- Test suite: 55 tests passing (+7 dashboard)
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 

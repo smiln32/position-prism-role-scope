@@ -3,6 +3,7 @@ import ModelInspector from './ModelInspector';
 import InterviewScreen from './interview/InterviewScreen';
 import DocumentsScreen from './analysis/DocumentsScreen';
 import DeliverablesScreen from './deliverables/DeliverablesScreen';
+import DashboardScreen from './dashboard/DashboardScreen';
 import { createEmptyModel, newId } from './knowledge-model/model';
 import {
   ProjectStore,
@@ -20,6 +21,7 @@ type Screen =
   | { name: 'interview'; projectId: string; sessionId: string }
   | { name: 'documents'; projectId: string }
   | { name: 'deliverables'; projectId: string }
+  | { name: 'dashboard'; projectId: string }
   | { name: 'inspector' };
 
 function Disclaimer() {
@@ -69,6 +71,10 @@ export default function App() {
       )}
       {screen.name === 'deliverables' && (
         <DeliverablesRoute key={`del-${screen.projectId}`} store={store}
+          projectId={screen.projectId} go={setScreen} changed={bump} />
+      )}
+      {screen.name === 'dashboard' && (
+        <DashboardRoute key={`dash-${screen.projectId}-${refresh}`} store={store}
           projectId={screen.projectId} go={setScreen} changed={bump} />
       )}
       {screen.name === 'inspector' && (
@@ -325,6 +331,15 @@ function ProjectScreen({
         Add or review documents{(project.documents?.length ?? 0) > 0 ? ` (${project.documents!.length} on file)` : ''}
       </button>
 
+      <h2>Where things stand</h2>
+      <p className="why">
+        Why a dashboard: one look at completeness, risk, open questions, and
+        how fresh the record is.
+      </p>
+      <button onClick={() => go({ name: 'dashboard', projectId })}>
+        Open the dashboard
+      </button>
+
       <h2>The succession package</h2>
       <p className="why">
         Why the package: this is what all of this becomes - the documents a
@@ -438,6 +453,37 @@ function DeliverablesRoute({
     <DeliverablesScreen
       project={project}
       onSave={(next) => {
+        store.save(next);
+        setProject(next);
+        changed();
+      }}
+      onBack={() => go({ name: 'project', projectId })}
+    />
+  );
+}
+
+function DashboardRoute({
+  store, projectId, go, changed,
+}: {
+  store: ProjectStore; projectId: string;
+  go: (s: Screen) => void; changed: () => void;
+}) {
+  const [project, setProject] = useState<ProjectFile | null>(() => {
+    try { return store.load(projectId); } catch { return null; }
+  });
+  if (!project) {
+    return (
+      <section>
+        <button className="quiet" onClick={() => go({ name: 'home' })}>← Back</button>
+        <p style={{ marginTop: '1rem' }}>That project could not be loaded from this computer.</p>
+      </section>
+    );
+  }
+  return (
+    <DashboardScreen
+      project={project}
+      onSave={(next) => {
+        next.model.updatedAt = new Date().toISOString();
         store.save(next);
         setProject(next);
         changed();

@@ -3,6 +3,7 @@ import type {
 } from '../knowledge-model/schema';
 import { exportModel } from '../knowledge-model/model';
 import { TRACKS } from '../interview/engine';
+import { scoreRisk, SCORING_EXPLANATION } from '../dashboard/metrics';
 import type { ProjectFile } from '../project/store';
 
 /**
@@ -244,13 +245,17 @@ function emergencyBrief(doc: Doc, project: ProjectFile): void {
 
 function riskReport(doc: Doc, project: ProjectFile): void {
   const m = project.model;
-  doc.h2('Risks on record');
+  doc.h2('Risks on record, scored');
+  doc.p(`*${SCORING_EXPLANATION}*`);
   if (m.entities.risks.length === 0) doc.notCaptured();
-  for (const r of m.entities.risks) {
-    doc.h3(`${doc.c(r.riskKind)}${mark(r)}`);
+  const scored = m.entities.risks.map(scoreRisk).sort((a, b) => b.score - a.score);
+  for (const s of scored) {
+    const r = s.risk;
+    doc.h3(`${s.score} (${s.band}) — ${doc.c(r.riskKind)}${mark(r)}`);
     doc.p(doc.c(r.description));
     doc.p(`Impact: ${doc.c(r.impact)}`);
     if (r.mitigation) doc.p(`Mitigation on record: ${doc.c(r.mitigation)}`);
+    doc.p(`*How this score was reached: ${s.reasons.join('; ')}.*`);
   }
   doc.h2('Open questions');
   const open = m.entities.gaps.filter((g) => g.status !== 'resolved');
@@ -258,7 +263,6 @@ function riskReport(doc: Doc, project: ProjectFile): void {
   if (open.length === 0) doc.p('Nothing is waiting.');
   for (const g of open) doc.bullet(doc.c(g.question));
   doc.gap();
-  doc.p('*Numeric risk scoring and the live dashboard arrive with the next part of the build; this report lists the underlying record in full.*');
 }
 
 function aiExport(doc: Doc, project: ProjectFile): void {
