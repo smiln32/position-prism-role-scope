@@ -43,6 +43,8 @@ export interface ProjectFile {
   /** Project-level interview memory (Stage 4+): threads and coverage
    *  persist across sessions. Optional and additive. */
   interviewMemory?: import('../interview/engine').ProjectInterviewMemory;
+  /** Uploaded/pasted documents (Stage 5+). Optional and additive. */
+  documents?: import('../analysis/extract').ProjectDocument[];
 }
 
 /** Fold legacy Stage 3 per-session interview state into project memory. */

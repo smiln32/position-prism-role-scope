@@ -128,3 +128,27 @@ creates a contradiction Gap quoting BOTH answers verbatim and queues a
 "which is right?" thread. This may flag complementary re-answers as well as
 true conflicts - asking "which is right, or are both true?" is safe either
 way, and conservative beats silent. | Done.
+
+2026-07-10 | Gate | Stage 4 delivered; Carla directed "Next stage".
+Stage 5 authorized. | Logged.
+
+2026-07-10 | Stage 5 | Documents are stored on the project file
+(ProjectFile.documents: id, name, addedAt, text - additive optional field,
+format stays 1.0.0). Full text is kept so conflicts can quote the document
+verbatim and the owner can re-audit extraction later. | Done.
+
+2026-07-10 | Stage 5 | Rule-based document extraction: every non-empty
+line becomes a Fact verbatim (source kind 'document' + documentId + line
+number, confidence high per spec's documents-are-authoritative rule,
+verified false). Undefined names create Gaps exactly as in interviews. No
+paraphrase, no synthesis - the honest rule-based ceiling, consistent with
+the Stage 3 ruling. | Done.
+
+2026-07-10 | Stage 5 | Conflict rule (deterministic): a document line and
+an interview fact conflict when they share 3+ significant content words
+AND their month-names or numbers are non-empty, differing sets. The
+conflict Gap quotes both verbatim and asks which is right. Resolution is
+owner-directed in the UI: the chosen statement gets verified=true, the
+other drops to confidence low ("both true" verifies both); the gap is
+marked resolved; NOTHING is deleted. Owner-directed modification is
+attributable modification, satisfying rule 9. | Done.

@@ -1,9 +1,11 @@
 # STATE.md - Project State
 
 Last updated: 2026-07-10
-Current stage: Stage 4 (All Eight Tracks + Cross-Session Memory) - COMPLETE
-Next stage: Stage 5 (Document Analysis) - authorized under the logged spec
-amendment. HANDOFF.md remains valid if/when the build moves to Claude Code.
+Current stage: Stage 5 (Document Analysis) - COMPLETE
+Next stage: Stage 6 (Deliverable Generation) - authorized under the logged
+spec amendment. NOTE the Stage 3 ruling: deliverables render from verbatim
+facts and labeled inference only; where the model lacks structure they say
+"Not yet captured". HANDOFF.md remains valid if/when moving to Claude Code.
 
 ## What exists right now
 
@@ -36,7 +38,14 @@ amendment. HANDOFF.md remains valid if/when the build moves to Claude Code.
   fact linked, "which is right?" thread queued); legacy Stage 3 session
   state auto-migrates on load; InterviewScreen adds track picker + revisit
 - 07-testing/stage4-acceptance.md - multi-session + worked contradiction
-- Test suite: 33 tests passing (18 schema + 4 store + 5 track-1 + 6 stage 4)
+- STAGE 5: app/src/analysis/extract.ts - line-verbatim document extraction
+  with attribution, conservative name gaps, deterministic conflict rule
+  (3+ shared content words + differing months/numbers), owner-directed
+  resolution (verify chosen, demote other, resolve gap, delete nothing);
+  DocumentsScreen with paste/upload, conflict cards, resolution buttons;
+  ProjectFile.documents additive field; 03-analysis/README.md
+- 07-testing/stage5-acceptance.md - before/after diff, conflict resolved
+- Test suite: 40 tests passing (+7 analysis)
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import ModelInspector from './ModelInspector';
 import InterviewScreen from './interview/InterviewScreen';
+import DocumentsScreen from './analysis/DocumentsScreen';
 import { createEmptyModel, newId } from './knowledge-model/model';
 import {
   ProjectStore,
@@ -16,6 +17,7 @@ type Screen =
   | { name: 'new-project' }
   | { name: 'project'; projectId: string }
   | { name: 'interview'; projectId: string; sessionId: string }
+  | { name: 'documents'; projectId: string }
   | { name: 'inspector' };
 
 function Disclaimer() {
@@ -58,6 +60,10 @@ export default function App() {
         <InterviewRoute key={`${screen.projectId}-${screen.sessionId}`} store={store}
           projectId={screen.projectId} sessionId={screen.sessionId}
           go={setScreen} changed={bump} />
+      )}
+      {screen.name === 'documents' && (
+        <DocumentsRoute key={`docs-${screen.projectId}-${refresh}`} store={store}
+          projectId={screen.projectId} go={setScreen} changed={bump} />
       )}
       {screen.name === 'inspector' && (
         <section>
@@ -303,6 +309,16 @@ function ProjectScreen({
         </details>
       )}
 
+      <h2>Documents</h2>
+      <p className="why">
+        Why documents: written records - vendor lists, old procedures,
+        notes - can fill in what interviews miss, and catch what memory
+        gets wrong.
+      </p>
+      <button onClick={() => go({ name: 'documents', projectId })}>
+        Add or review documents{(project.documents?.length ?? 0) > 0 ? ` (${project.documents!.length} on file)` : ''}
+      </button>
+
       <h2>Your copy of everything</h2>
       <p className="why">
         Why export: your project lives only on this computer. Exporting gives
@@ -344,6 +360,37 @@ function InterviewRoute({
     <InterviewScreen
       project={project}
       session={session}
+      onSave={(next) => {
+        next.model.updatedAt = new Date().toISOString();
+        store.save(next);
+        setProject(next);
+        changed();
+      }}
+      onBack={() => go({ name: 'project', projectId })}
+    />
+  );
+}
+
+function DocumentsRoute({
+  store, projectId, go, changed,
+}: {
+  store: ProjectStore; projectId: string;
+  go: (s: Screen) => void; changed: () => void;
+}) {
+  const [project, setProject] = useState<ProjectFile | null>(() => {
+    try { return store.load(projectId); } catch { return null; }
+  });
+  if (!project) {
+    return (
+      <section>
+        <button className="quiet" onClick={() => go({ name: 'home' })}>← Back</button>
+        <p style={{ marginTop: '1rem' }}>That project could not be loaded from this computer.</p>
+      </section>
+    );
+  }
+  return (
+    <DocumentsScreen
+      project={project}
       onSave={(next) => {
         next.model.updatedAt = new Date().toISOString();
         store.save(next);
