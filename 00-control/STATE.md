@@ -62,7 +62,12 @@ new logged decisions.
   nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
-- Test suite: 56 tests passing (+1 end-to-end acceptance run)
+- Test suite: 57 tests passing (+1 end-to-end acceptance run)
+- MAINTENANCE (branch maintenance/merge-report-timestamp-fix, awaiting
+  review): merge.ts excludes 'updatedAt' from the content-change loop so a
+  pure timestamp bump reports 'unchanged' not 'updated'; +1 regression test.
+  Report-labeling only; merge semantics and frozen schema untouched. See
+  DECISIONS.md 2026-07-10 Maintenance entry.
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 
