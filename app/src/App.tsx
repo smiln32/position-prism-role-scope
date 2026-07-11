@@ -139,7 +139,7 @@ function HomeScreen({ store, go }: { store: ProjectStore; go: (s: Screen) => voi
         </button>
         <label className="buttonlike">
           Restore from a project file…
-          <input type="file" accept=".json" style={{ display: 'none' }}
+          <input type="file" accept=".json" className="visually-hidden"
             onChange={(ev) => onImport(ev.target.files?.[0])} />
         </label>
       </div>

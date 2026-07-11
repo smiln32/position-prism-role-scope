@@ -208,3 +208,13 @@ screenshotted from the delivered zip. | Logged.
 2026-07-10 | Correction | Earlier Stage 7 decision text said "44 areas";
 the true total is 50 (Track 1 has 8 areas, Tracks 2-8 have 6 each). The
 reconciliation test asserts 50. Noting rather than editing history. | Logged.
+
+2026-07-10 | Gate | Stage 7 delivered; Carla directed "Stage 8". Authorized. |
+Logged.
+
+2026-07-10 | Stage 8 | Hardening changes: keyboard-accessible file inputs
+(.visually-hidden replaces display:none), top-level ErrorBoundary, empty-
+answer nudge in interviews, "model" jargon removed from a user-facing
+button, 08-docs HELP.md and DISCLAIMER.md written. Acceptance run is a
+standing automated test (07-testing/acceptance.test.ts, mirrored in
+app/src) so the Definition of Done is re-proven on every test run. | Done.

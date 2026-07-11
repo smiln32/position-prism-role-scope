@@ -15,6 +15,7 @@ export default function InterviewScreen({
   const [answer, setAnswer] = useState('');
   const [lastExtract, setLastExtract] = useState('');
   const [revisitAreaId, setRevisitAreaId] = useState<string | null>(null);
+  const [nudge, setNudge] = useState('');
 
   const memory = project.interviewMemory ?? engine.createMemory();
 
@@ -64,7 +65,11 @@ export default function InterviewScreen({
   const showInput = revisitAreaId !== null || q.areaId !== 'done';
 
   const submit = () => {
-    if (!answer.trim()) return;
+    if (!answer.trim()) {
+      setNudge('Take your time - whenever you are ready, write your answer above and submit it.');
+      return;
+    }
+    setNudge('');
     const result = engine.ingestAnswer(
       memory, project.model, session.id, trackId, answer, revisitAreaId ?? undefined,
     );
@@ -133,6 +138,7 @@ export default function InterviewScreen({
         )}
       </div>
 
+      {nudge && <p className="small muted">{nudge}</p>}
       {lastExtract && <p className="small muted">{lastExtract}</p>}
 
       {answeredAreas.length > 0 && !revisitAreaId && (

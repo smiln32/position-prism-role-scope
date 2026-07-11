@@ -112,7 +112,7 @@ export default function DocumentsScreen({
         <button className="primary" onClick={() => addDocument(docName, pasted)}>Read this document</button>
         <label className="buttonlike">
           Or upload a text file…
-          <input type="file" accept=".txt,.md,.csv" style={{ display: 'none' }}
+          <input type="file" accept=".txt,.md,.csv" className="visually-hidden"
             onChange={(ev) => onFile(ev.target.files?.[0])} />
         </label>
       </div>

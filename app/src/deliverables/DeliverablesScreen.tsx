@@ -70,7 +70,7 @@ export default function DeliverablesScreen({
             </button>
             <button onClick={() => download(`${safeName}-knowledge-model.json`,
               exportModel(project.model), 'application/json')}>
-              Download the model (JSON)
+              Download the raw record (JSON)
             </button>
           </>
         )}

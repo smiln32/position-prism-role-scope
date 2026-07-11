@@ -89,7 +89,7 @@ export default function ModelInspector() {
         </button>
         <label style={{ border: '1px solid var(--rule)', padding: '0.2rem 0.6rem', cursor: 'pointer' }}>
           Import JSON…
-          <input type="file" accept=".json" style={{ display: 'none' }}
+          <input type="file" accept=".json" className="visually-hidden"
             onChange={(ev) => onFile(ev.target.files?.[0])} />
         </label>
         {model && <button onClick={download}>Export JSON</button>}

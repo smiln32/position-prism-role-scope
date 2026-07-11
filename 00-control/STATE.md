@@ -1,10 +1,10 @@
 # STATE.md - Project State
 
 Last updated: 2026-07-10
-Current stage: Stage 7 (Risk Scoring, Gap Dashboard & AI Export) - COMPLETE
-Next stage: Stage 8 (Hardening & Acceptance) - the final stage. Full
-regression, accessibility audit, empty/error states, copy polish, and the
-end-to-end acceptance run against the Definition of Done.
+Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE pending final approval.
+Next stage: none. The staged build plan is complete. Future work (API
+adapter, Role DNA schema sharing, cloud sync) proceeds via HANDOFF.md and
+new logged decisions.
 
 ## What exists right now
 
@@ -58,7 +58,11 @@ end-to-end acceptance run against the Definition of Done.
   Report deliverable now prints scores + reasons; 04-model-views/README.md
 - 07-testing/stage7-acceptance.md - exact reconciliation table + export
   validation evidence
-- Test suite: 55 tests passing (+7 dashboard)
+- STAGE 8: ErrorBoundary, keyboard-accessible file inputs, empty-answer
+  nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
+  07-testing/stage8-audits.md; acceptance run report in
+  07-testing/stage8-acceptance-report.md
+- Test suite: 56 tests passing (+1 end-to-end acceptance run)
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 
