@@ -152,3 +152,28 @@ owner-directed in the UI: the chosen statement gets verified=true, the
 other drops to confidence low ("both true" verifies both); the gap is
 marked resolved; NOTHING is deleted. Owner-directed modification is
 attributable modification, satisfying rule 9. | Done.
+
+2026-07-10 | Gate | Stage 5 delivered; Carla directed "Stage 6". Authorized. |
+Logged.
+
+2026-07-10 | Stage 6 | Renderer integrity mechanism: every deliverable is
+built through a Doc helper whose c() function registers each model-derived
+string as it is emitted. The automated audit then verifies every registered
+string appears verbatim among the model's field values. Static template
+labels (headings, connective text) are not model content and are exempt.
+This makes the spec's "audited line-by-line against the model" requirement
+a running test, not a one-time manual check. | Done.
+
+2026-07-10 | Stage 6 | Verification markers: any rendered entity with
+verified=false carries "(needs verification)"; confidence low additionally
+carries "(low confidence)". Empty sections render the literal words
+"Not yet captured." - never sample text, never a synthesized filler. | Done.
+
+2026-07-10 | Stage 6 | Versioning: ProjectFile.deliverableVersions (additive
+optional field) increments per deliverable on each package generation.
+Version and generation date print in every document header. | Done.
+
+2026-07-10 | Stage 6 | Export formats: per-deliverable markdown download,
+full-package markdown download, model JSON (deliverable 9), and a
+print-friendly view using the app's serif visual system via the browser's
+print function. | Done.

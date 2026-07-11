@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import ModelInspector from './ModelInspector';
 import InterviewScreen from './interview/InterviewScreen';
 import DocumentsScreen from './analysis/DocumentsScreen';
+import DeliverablesScreen from './deliverables/DeliverablesScreen';
 import { createEmptyModel, newId } from './knowledge-model/model';
 import {
   ProjectStore,
@@ -18,6 +19,7 @@ type Screen =
   | { name: 'project'; projectId: string }
   | { name: 'interview'; projectId: string; sessionId: string }
   | { name: 'documents'; projectId: string }
+  | { name: 'deliverables'; projectId: string }
   | { name: 'inspector' };
 
 function Disclaimer() {
@@ -63,6 +65,10 @@ export default function App() {
       )}
       {screen.name === 'documents' && (
         <DocumentsRoute key={`docs-${screen.projectId}-${refresh}`} store={store}
+          projectId={screen.projectId} go={setScreen} changed={bump} />
+      )}
+      {screen.name === 'deliverables' && (
+        <DeliverablesRoute key={`del-${screen.projectId}`} store={store}
           projectId={screen.projectId} go={setScreen} changed={bump} />
       )}
       {screen.name === 'inspector' && (
@@ -319,6 +325,15 @@ function ProjectScreen({
         Add or review documents{(project.documents?.length ?? 0) > 0 ? ` (${project.documents!.length} on file)` : ''}
       </button>
 
+      <h2>The succession package</h2>
+      <p className="why">
+        Why the package: this is what all of this becomes - the documents a
+        successor, a buyer, or your family would actually use.
+      </p>
+      <button onClick={() => go({ name: 'deliverables', projectId })}>
+        Open the succession package
+      </button>
+
       <h2>Your copy of everything</h2>
       <p className="why">
         Why export: your project lives only on this computer. Exporting gives
@@ -393,6 +408,36 @@ function DocumentsRoute({
       project={project}
       onSave={(next) => {
         next.model.updatedAt = new Date().toISOString();
+        store.save(next);
+        setProject(next);
+        changed();
+      }}
+      onBack={() => go({ name: 'project', projectId })}
+    />
+  );
+}
+
+function DeliverablesRoute({
+  store, projectId, go, changed,
+}: {
+  store: ProjectStore; projectId: string;
+  go: (s: Screen) => void; changed: () => void;
+}) {
+  const [project, setProject] = useState<ProjectFile | null>(() => {
+    try { return store.load(projectId); } catch { return null; }
+  });
+  if (!project) {
+    return (
+      <section>
+        <button className="quiet" onClick={() => go({ name: 'home' })}>← Back</button>
+        <p style={{ marginTop: '1rem' }}>That project could not be loaded from this computer.</p>
+      </section>
+    );
+  }
+  return (
+    <DeliverablesScreen
+      project={project}
+      onSave={(next) => {
         store.save(next);
         setProject(next);
         changed();

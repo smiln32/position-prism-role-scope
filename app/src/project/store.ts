@@ -45,6 +45,8 @@ export interface ProjectFile {
   interviewMemory?: import('../interview/engine').ProjectInterviewMemory;
   /** Uploaded/pasted documents (Stage 5+). Optional and additive. */
   documents?: import('../analysis/extract').ProjectDocument[];
+  /** Per-deliverable version counters (Stage 6+). Optional and additive. */
+  deliverableVersions?: Record<string, number>;
 }
 
 /** Fold legacy Stage 3 per-session interview state into project memory. */

@@ -1,11 +1,11 @@
 # STATE.md - Project State
 
 Last updated: 2026-07-10
-Current stage: Stage 5 (Document Analysis) - COMPLETE
-Next stage: Stage 6 (Deliverable Generation) - authorized under the logged
-spec amendment. NOTE the Stage 3 ruling: deliverables render from verbatim
-facts and labeled inference only; where the model lacks structure they say
-"Not yet captured". HANDOFF.md remains valid if/when moving to Claude Code.
+Current stage: Stage 6 (Deliverable Generation) - COMPLETE
+Next stage: Stage 7 (Risk Scoring, Gap Dashboard & AI Export) - authorized
+under the logged spec amendment. Note: the AI export deliverable exists
+(Stage 6, #9); Stage 7 adds scoring logic, the dashboard, and export
+validation against the schema. HANDOFF.md remains valid if/when moving.
 
 ## What exists right now
 
@@ -45,7 +45,14 @@ facts and labeled inference only; where the model lacks structure they say
   DocumentsScreen with paste/upload, conflict cards, resolution buttons;
   ProjectFile.documents additive field; 03-analysis/README.md
 - 07-testing/stage5-acceptance.md - before/after diff, conflict resolved
-- Test suite: 40 tests passing (+7 analysis)
+- STAGE 6: app/src/deliverables/render.ts - nine renderers over the model
+  with Doc.c() audit registration; auditRendered() proves zero invention;
+  "Not yet captured" for empty sections; needs-verification/low-confidence
+  markers; per-deliverable versioning on the project file; DeliverablesScreen
+  with read view, per-doc + package markdown download, model JSON download,
+  print view; 05-deliverables/README.md; generated fixture package with
+  audit summary in 07-testing/stage6-package/
+- Test suite: 48 tests passing (+8 deliverables)
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 
