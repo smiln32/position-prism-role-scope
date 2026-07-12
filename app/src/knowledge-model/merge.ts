@@ -63,7 +63,10 @@ function mergeEntity(existing: AnyEntity, incoming: AnyEntity): { merged: AnyEnt
   const newerRec = newer as unknown as Record<string, unknown>;
 
   for (const key of Object.keys(newerRec)) {
-    if (key === 'sources' || key === 'verified' || key === 'createdAt') continue;
+    // sources/verified/createdAt/updatedAt are housekeeping fields set
+    // explicitly below; excluding them keeps fieldsChanged a record of
+    // *content* changes, so a pure timestamp bump reads as 'unchanged'.
+    if (key === 'sources' || key === 'verified' || key === 'createdAt' || key === 'updatedAt') continue;
     const candidate = newerRec[key];
     if (isEmpty(candidate)) continue;
     if (JSON.stringify(merged[key]) !== JSON.stringify(candidate)) {
