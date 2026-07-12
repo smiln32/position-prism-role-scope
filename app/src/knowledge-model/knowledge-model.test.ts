@@ -134,6 +134,19 @@ describe('merge', () => {
     expect(report.updated).toBe(0);
     expect(report.unchanged).toBe(12);
   });
+
+  it('a newer timestamp with identical content reports unchanged', () => {
+    const base: KnowledgeModel = JSON.parse(JSON.stringify(fixtureModel));
+    const incoming: KnowledgeModel = JSON.parse(JSON.stringify(fixtureModel));
+    incoming.entities.facts[0].updatedAt = '2026-07-12T12:00:00.000Z';
+
+    const { model, report } = mergeModels(base, incoming);
+    const change = report.changes.find((c) => c.id === 'fact_0001');
+    expect(change?.action).toBe('unchanged');
+    expect(change?.fieldsChanged).toEqual([]);
+    // the newer timestamp still wins on the merged entity itself
+    expect(model.entities.facts[0].updatedAt).toBe('2026-07-12T12:00:00.000Z');
+  });
 });
 
 describe('dedupe detection', () => {

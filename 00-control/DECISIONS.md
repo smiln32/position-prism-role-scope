@@ -263,3 +263,16 @@ Decision Playbook, and Memory Archive render mostly "Not yet captured".
   73 tests passing (was 56 on master); clean build + lint. Browser-verified via
   the jsdom component tests (real DOM render + events). Branch off master,
   independent of the LLM adapter. Awaiting Carla's review. | Proposed.
+
+2026-07-10 | Maintenance (Claude Code, baseline re-verified 57/57) | Merge
+report fidelity fix: mergeEntity excluded 'updatedAt' from the content-
+change loop (now consistent with 'createdAt'/'sources'/'verified', which
+are all set explicitly afterward). Before this, re-merging content-
+identical entities that carried only a newer updatedAt was reported as
+action:'updated' with fieldsChanged:['updatedAt'], inflating the report's
+"updated" count; the merged entity still takes the newer timestamp. This
+changes only the human-facing MergeReport labeling, not merge semantics
+(nothing deletes, sources union, newer non-empty content wins) or the
+frozen Stage 1 schema. Added a regression test asserting a newer timestamp
+with identical content reports 'unchanged'. Branch
+maintenance/merge-report-timestamp-fix, awaiting Carla's review. | Proposed.

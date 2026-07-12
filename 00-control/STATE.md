@@ -62,9 +62,14 @@ new logged decisions.
   nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
-- Test suite: 56 tests passing (+1 end-to-end acceptance run)
-- FEATURE (branch feature/structured-knowledge-capture, off master, awaiting
-  review): three post-review improvements. 73 tests, clean build + lint.
+- Test suite: 74 tests passing (+1 end-to-end acceptance run)
+- MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
+  excludes 'updatedAt' from the content-change loop so a pure timestamp bump
+  reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;
+  merge semantics and frozen schema untouched. See DECISIONS.md 2026-07-10
+  Maintenance entry.
+- MERGED to master (PR #2, feature/structured-knowledge-capture): three
+  post-review improvements. Clean build + lint.
   * app/src/knowledge-model/capture.ts - pure, tested add/edit functions for
     the entity types the interview never creates (relationships, decisions,
     processes, judgments, history, systems, commitments) + patchEntity +
