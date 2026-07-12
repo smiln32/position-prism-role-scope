@@ -62,12 +62,28 @@ new logged decisions.
   nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
-- Test suite: 57 tests passing (+1 end-to-end acceptance run)
-- MAINTENANCE (branch maintenance/merge-report-timestamp-fix, awaiting
-  review): merge.ts excludes 'updatedAt' from the content-change loop so a
-  pure timestamp bump reports 'unchanged' not 'updated'; +1 regression test.
-  Report-labeling only; merge semantics and frozen schema untouched. See
-  DECISIONS.md 2026-07-10 Maintenance entry.
+- Test suite: 74 tests passing (+1 end-to-end acceptance run)
+- MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
+  excludes 'updatedAt' from the content-change loop so a pure timestamp bump
+  reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;
+  merge semantics and frozen schema untouched. See DECISIONS.md 2026-07-10
+  Maintenance entry.
+- MERGED to master (PR #2, feature/structured-knowledge-capture): three
+  post-review improvements. Clean build + lint.
+  * app/src/knowledge-model/capture.ts - pure, tested add/edit functions for
+    the entity types the interview never creates (relationships, decisions,
+    processes, judgments, history, systems, commitments) + patchEntity +
+    setVerified. Owner-entered = source 'interview'/"entered directly",
+    confidence high, verified true. Closes the gap where the Relationship Map,
+    Decision Playbook, and Memory Archive rendered mostly "Not yet captured".
+  * app/src/knowledge-model/KnowledgeScreen.tsx - "Everything on record":
+    browse + add + inline-edit + confirm, wired as the 'knowledge' screen with
+    a "Review & add knowledge" button on the project screen.
+  * Component-test harness: jsdom + @testing-library/react/dom (dev deps),
+    per-file `@vitest-environment jsdom`. KnowledgeScreen.test.tsx (5) and
+    App.test.tsx (2, first coverage of App.tsx). Genuinely browser-verified
+    via real DOM render + events. See DECISIONS.md 2026-07-10 "Post-review
+    improvements".
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 

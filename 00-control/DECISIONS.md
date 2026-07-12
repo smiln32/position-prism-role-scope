@@ -226,6 +226,44 @@ package renamed successor-app; topic-convention note added to the schema
 README. Frozen contract, control-file accuracy, integrity semantics,
 disclaimer, voice, and navigation all verified consistent. | Done.
 
+2026-07-10 | Post-review improvements (Claude Code, branch
+feature/structured-knowledge-capture) | Three enhancements addressing the
+biggest gap surfaced in review: without structured capture, real (non-fixture)
+use only ever creates facts, gaps, and risks - so the Relationship Map,
+Decision Playbook, and Memory Archive render mostly "Not yet captured".
+
+  A. Direct structured capture (app/src/knowledge-model/capture.ts): pure,
+  tested add functions for relationships, decisions, processes, judgments,
+  history, systems, commitments, plus patchEntity (owner-directed field edit)
+  and setVerified. PROVENANCE: a directly-entered entity is the owner asserting
+  their own knowledge, so source kind is 'interview' (came from the owner) with
+  detail "Entered directly by the owner", confidence 'high', verified=true - the
+  owner is the source of truth for their own business, so these carry no "needs
+  verification" marker. This EXTENDS the Stage 3/5 policy (facts verbatim; only
+  gaps/risks inferred) with a fourth path: owner-authoritative direct entry. It
+  does not touch the frozen schema and does not weaken any guarantee - directly
+  entered strings are the owner's, not invented. Unfilled required-by-type
+  strings default to "Not yet captured" (audit-safe, consistent with the app).
+  Nothing deletes (rule 9); edits bump updatedAt (attributable). 10 unit tests.
+
+  B. Owner-facing Knowledge screen (KnowledgeScreen.tsx): "Everything on record"
+  - browse every entity type in plain language, add the structured types the
+  interview does not reach, confirm items, and correct any field inline. Wired
+  into App as a new 'knowledge' screen with a "Review & add knowledge" entry on
+  the project screen. Data-driven over a per-type field config; list fields
+  (steps, criteria) are add-only for now (patchEntity handles string/boolean).
+
+  C. Component-test harness: added dev-only deps jsdom + @testing-library/react
+  + @testing-library/dom (dev dependencies for testing are justified; the
+  alternative was an entirely untested UI layer). Per-file `@vitest-environment
+  jsdom` pragma keeps the existing node tests fast. New tests: KnowledgeScreen
+  (add / inline-edit / verify-toggle / form-scoping) and an App shell smoke test
+  that drives create-project end to end - the first coverage of App.tsx.
+
+  73 tests passing (was 56 on master); clean build + lint. Browser-verified via
+  the jsdom component tests (real DOM render + events). Branch off master,
+  independent of the LLM adapter. Awaiting Carla's review. | Proposed.
+
 2026-07-10 | Maintenance (Claude Code, baseline re-verified 57/57) | Merge
 report fidelity fix: mergeEntity excluded 'updatedAt' from the content-
 change loop (now consistent with 'createdAt'/'sources'/'verified', which

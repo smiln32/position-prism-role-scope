@@ -4,6 +4,7 @@ import InterviewScreen from './interview/InterviewScreen';
 import DocumentsScreen from './analysis/DocumentsScreen';
 import DeliverablesScreen from './deliverables/DeliverablesScreen';
 import DashboardScreen from './dashboard/DashboardScreen';
+import KnowledgeScreen from './knowledge-model/KnowledgeScreen';
 import { createEmptyModel, newId } from './knowledge-model/model';
 import {
   ProjectStore,
@@ -20,6 +21,7 @@ type Screen =
   | { name: 'project'; projectId: string }
   | { name: 'interview'; projectId: string; sessionId: string }
   | { name: 'documents'; projectId: string }
+  | { name: 'knowledge'; projectId: string }
   | { name: 'deliverables'; projectId: string }
   | { name: 'dashboard'; projectId: string }
   | { name: 'inspector' };
@@ -67,6 +69,10 @@ export default function App() {
       )}
       {screen.name === 'documents' && (
         <DocumentsRoute key={`docs-${screen.projectId}-${refresh}`} store={store}
+          projectId={screen.projectId} go={setScreen} changed={bump} />
+      )}
+      {screen.name === 'knowledge' && (
+        <KnowledgeRoute key={`know-${screen.projectId}-${refresh}`} store={store}
           projectId={screen.projectId} go={setScreen} changed={bump} />
       )}
       {screen.name === 'deliverables' && (
@@ -321,6 +327,17 @@ function ProjectScreen({
         </details>
       )}
 
+      <h2>Everything on record</h2>
+      <p className="why">
+        Why this: interviews and documents do not reach everything. Here you
+        can add relationships, decisions, processes, history and more directly,
+        confirm what looks right, and correct anything that is off. Every
+        deliverable is built from exactly what is on record.
+      </p>
+      <button onClick={() => go({ name: 'knowledge', projectId })}>
+        Review &amp; add knowledge
+      </button>
+
       <h2>Documents</h2>
       <p className="why">
         Why documents: written records - vendor lists, old procedures,
@@ -420,6 +437,37 @@ function DocumentsRoute({
   }
   return (
     <DocumentsScreen
+      project={project}
+      onSave={(next) => {
+        next.model.updatedAt = new Date().toISOString();
+        store.save(next);
+        setProject(next);
+        changed();
+      }}
+      onBack={() => go({ name: 'project', projectId })}
+    />
+  );
+}
+
+function KnowledgeRoute({
+  store, projectId, go, changed,
+}: {
+  store: ProjectStore; projectId: string;
+  go: (s: Screen) => void; changed: () => void;
+}) {
+  const [project, setProject] = useState<ProjectFile | null>(() => {
+    try { return store.load(projectId); } catch { return null; }
+  });
+  if (!project) {
+    return (
+      <section>
+        <button className="quiet" onClick={() => go({ name: 'home' })}>← Back</button>
+        <p style={{ marginTop: '1rem' }}>That project could not be loaded from this computer.</p>
+      </section>
+    );
+  }
+  return (
+    <KnowledgeScreen
       project={project}
       onSave={(next) => {
         next.model.updatedAt = new Date().toISOString();
