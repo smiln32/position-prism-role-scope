@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { KnowledgeModel, AnyEntity, CollectionKey } from './schema';
 import type { ProjectFile } from '../project/store';
 import {
   addRelationship, addDecision, addProcess, addJudgment,
   addHistory, addSystem, addCommitment, patchEntity, setVerified,
+  addListItem, editListItem, removeListItem, listFieldValues,
   type RelationshipInput, type DecisionInput, type ProcessInput, type JudgmentInput,
   type HistoryInput, type SystemInput, type CommitmentInput,
 } from './capture';
@@ -213,10 +214,61 @@ function AddForm({ type, onAdd }: { type: TypeDef; onAdd: (input: Record<string,
   );
 }
 
+/** One editable item in a list field: text input that commits on blur, plus Remove. */
+function ListItemRow({ value, onCommit, onRemove }: {
+  value: string; onCommit: (v: string) => void; onRemove: () => void;
+}) {
+  const [text, setText] = useState(value);
+  // Re-sync when the underlying value changes (e.g. after a removal reindexes).
+  useEffect(() => setText(value), [value]);
+  const commit = () => {
+    const t = text.trim();
+    if (t && t !== value) onCommit(t); else setText(value);
+  };
+  return (
+    <div className="row" style={{ gap: '0.4rem', marginBottom: '0.3rem', alignItems: 'center' }}>
+      <input type="text" value={text} onChange={(e) => setText(e.target.value)}
+        onBlur={commit} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        aria-label={`Item: ${value}`} style={{ flex: 1 }} />
+      <button className="quiet" onClick={onRemove} aria-label={`Remove item: ${value}`}>Remove</button>
+    </div>
+  );
+}
+
+/** An editable array field (a process's steps, a decision's criteria, …). */
+function ListFieldEditor({ label, items, onAdd, onEdit, onRemove }: {
+  label: string; items: string[];
+  onAdd: (v: string) => void; onEdit: (i: number, v: string) => void; onRemove: (i: number) => void;
+}) {
+  const [adding, setAdding] = useState('');
+  const add = () => { if (adding.trim()) { onAdd(adding.trim()); setAdding(''); } };
+  return (
+    <div className="field">
+      <span>{label}</span>
+      {items.length === 0 && <span className="small muted">None yet.</span>}
+      {items.map((it, i) => (
+        <ListItemRow key={`${i}:${it}`} value={it}
+          onCommit={(v) => onEdit(i, v)} onRemove={() => onRemove(i)} />
+      ))}
+      <div className="row" style={{ gap: '0.4rem' }}>
+        <input type="text" value={adding} placeholder="Add another…"
+          onChange={(e) => setAdding(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
+          aria-label={`Add to ${label}`} style={{ flex: 1 }} />
+        <button className="quiet" onClick={add} disabled={!adding.trim()}>Add</button>
+      </div>
+    </div>
+  );
+}
+
+/** Strip the add-form-only "(one per line)" hint for the inline editor label. */
+const listLabel = (raw: string): string => raw.replace(/\s*\(one per line\)/i, '');
+
 function EntityCard({ type, entity, model, onSave }: {
   type: TypeDef; entity: AnyEntity; model: KnowledgeModel; onSave: (next: KnowledgeModel) => void; }) {
   const rec = entity as unknown as Record<string, unknown>;
   const editable = type.fields.filter((f) => !f.addList);
+  const listFields = type.fields.filter((f) => f.addList);
   const [draft, setDraft] = useState<Record<string, string | boolean>>({});
   const val = (f: FieldDef): string | boolean =>
     f.name in draft ? draft[f.name] : (rec[f.name] as string | boolean ?? (f.type === 'checkbox' ? false : ''));
@@ -234,6 +286,13 @@ function EntityCard({ type, entity, model, onSave }: {
       {editable.map((f) => (
         <Field key={f.name} def={f} value={val(f)}
           onChange={(v) => setDraft((sv) => ({ ...sv, [f.name]: v }))} />
+      ))}
+      {listFields.map((f) => (
+        <ListFieldEditor key={f.name} label={listLabel(f.label)}
+          items={listFieldValues(entity, f.name)}
+          onAdd={(v) => onSave(addListItem(model, entity.id, f.name, v))}
+          onEdit={(i, v) => onSave(editListItem(model, entity.id, f.name, i, v))}
+          onRemove={(i) => onSave(removeListItem(model, entity.id, f.name, i))} />
       ))}
       <div className="row" style={{ marginTop: '0.5rem', alignItems: 'center' }}>
         <label className="small" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>

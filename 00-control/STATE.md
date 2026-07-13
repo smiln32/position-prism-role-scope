@@ -1,7 +1,8 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-10
-Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE pending final approval.
+Last updated: 2026-07-13
+Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
+Expansion in progress on branches (see EXPANSION-HANDOFF.md / NEXT-STEPS.md).
 Next stage: none. The staged build plan is complete. Future work (API
 adapter, Role DNA schema sharing, cloud sync) proceeds via HANDOFF.md and
 new logged decisions.
@@ -62,7 +63,17 @@ new logged decisions.
   nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
-- Test suite: 74 tests passing (+1 end-to-end acceptance run)
+- Test suite: 74 tests passing on master (+1 end-to-end acceptance run)
+- PROPOSED (branch feature/list-field-editing, PR open): finish structured
+  capture - array fields are now editable item-by-item, not add-only.
+  * app/src/knowledge-model/capture.ts - addListItem/editListItem/
+    removeListItem/listFieldValues (pure, attributable; steps renumber 1..n;
+    removeListItem is owner-directed item correction, the only removal, never
+    a silent drop). Frozen schema untouched.
+  * app/src/knowledge-model/KnowledgeScreen.tsx - inline list editor in the
+    entity card (edit-on-blur input + Remove per item + Add-another row).
+  * Tests: +7 capture unit, +1 KnowledgeScreen component. 82 total; clean
+    build + lint. See DECISIONS.md 2026-07-13 (feature/list-field-editing).
 - MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
   excludes 'updatedAt' from the content-change loop so a pure timestamp bump
   reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;

@@ -3,8 +3,9 @@ import { createEmptyModel, validateModel } from './model';
 import {
   addRelationship, addDecision, addProcess, addJudgment,
   addHistory, addSystem, addCommitment, patchEntity, setVerified,
+  addListItem, editListItem, removeListItem, listFieldValues,
 } from './capture';
-import type { RelationshipEntity, ProcessEntity } from './schema';
+import type { RelationshipEntity, ProcessEntity, DecisionEntity } from './schema';
 
 const profile = { businessName: 'Fixture Co', ownerName: 'Owner (fictional)' };
 const empty = () => createEmptyModel('cap-test', profile);
@@ -112,5 +113,81 @@ describe('structured capture - edit', () => {
   it('throws on an unknown id rather than corrupting the model', () => {
     expect(() => patchEntity(empty(), 'nope', { who: 'x' })).toThrow(/no such entity/i);
     expect(() => setVerified(empty(), 'nope', true)).toThrow(/no such entity/i);
+  });
+});
+
+describe('structured capture - list-field edit', () => {
+  const seededProcess = () => {
+    const m = addProcess(empty(), {
+      name: 'Quote review', steps: ['pull drawings', 'check tolerances', 'set price'],
+      whoElseKnows: ['Denise'],
+    });
+    return { m, id: m.entities.processes[0].id };
+  };
+  const seededDecision = () => {
+    const m = addDecision(empty(), { name: 'Pricing', realCriteria: ['margin', 'relationship'] });
+    return { m, id: m.entities.decisions[0].id };
+  };
+
+  it('reads a step list back as plain strings', () => {
+    const { m } = seededProcess();
+    expect(listFieldValues(m.entities.processes[0], 'steps'))
+      .toEqual(['pull drawings', 'check tolerances', 'set price']);
+    expect(listFieldValues(m.entities.processes[0], 'nope')).toEqual([]);
+  });
+
+  it('appends a step and keeps the order contiguous', () => {
+    const { m, id } = seededProcess();
+    const m2 = addListItem(m, id, 'steps', '  send the quote  ');
+    const p = m2.entities.processes[0] as ProcessEntity;
+    expect(p.steps).toEqual([
+      { order: 1, description: 'pull drawings' },
+      { order: 2, description: 'check tolerances' },
+      { order: 3, description: 'set price' },
+      { order: 4, description: 'send the quote' }, // trimmed
+    ]);
+    expect(m2.updatedAt >= m.updatedAt).toBe(true);
+  });
+
+  it('removes a middle step and renumbers the rest 1..n', () => {
+    const { m, id } = seededProcess();
+    const m2 = removeListItem(m, id, 'steps', 1); // drop "check tolerances"
+    const p = m2.entities.processes[0] as ProcessEntity;
+    expect(p.steps).toEqual([
+      { order: 1, description: 'pull drawings' },
+      { order: 2, description: 'set price' },
+    ]);
+  });
+
+  it('edits a step in place', () => {
+    const { m, id } = seededProcess();
+    const p = (editListItem(m, id, 'steps', 0, 'pull the latest drawings')
+      .entities.processes[0]) as ProcessEntity;
+    expect(p.steps[0]).toEqual({ order: 1, description: 'pull the latest drawings' });
+  });
+
+  it('edits and removes a plain string[] field (decision criteria)', () => {
+    const { m, id } = seededDecision();
+    let m2 = addListItem(m, id, 'realCriteria', 'payment history');
+    m2 = editListItem(m2, id, 'realCriteria', 0, 'gross margin');
+    m2 = removeListItem(m2, id, 'realCriteria', 1); // drop "relationship"
+    expect((m2.entities.decisions[0] as DecisionEntity).realCriteria)
+      .toEqual(['gross margin', 'payment history']);
+  });
+
+  it('ignores blank add/edit and out-of-range indices (no-op, no timestamp bump)', () => {
+    const { m, id } = seededProcess();
+    expect(addListItem(m, id, 'steps', '   ')).toBe(m);
+    expect(editListItem(m, id, 'steps', 0, '  ')).toBe(m);
+    expect(editListItem(m, id, 'steps', 99, 'x')).toBe(m);
+    expect(removeListItem(m, id, 'steps', 99)).toBe(m);
+  });
+
+  it('is pure and rejects non-list fields and unknown ids', () => {
+    const { m, id } = seededProcess();
+    addListItem(m, id, 'steps', 'x');
+    expect(m.entities.processes[0].steps).toHaveLength(3); // input untouched
+    expect(() => addListItem(m, id, 'purpose', 'x')).toThrow(/not an editable list field/i);
+    expect(() => addListItem(m, 'nope', 'steps', 'x')).toThrow(/no such entity/i);
   });
 });

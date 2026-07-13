@@ -276,3 +276,40 @@ changes only the human-facing MergeReport labeling, not merge semantics
 frozen Stage 1 schema. Added a regression test asserting a newer timestamp
 with identical content reports 'unchanged'. Branch
 maintenance/merge-report-timestamp-fix, awaiting Carla's review. | Proposed.
+
+2026-07-13 | Expansion (Claude Code, branch feature/list-field-editing,
+baseline re-verified 74/74) | Finish structured capture (roadmap item B /
+NEXT-STEPS §3C): make the array fields on captured entities editable
+item-by-item, not just add-only at creation. Before this, once a process or
+decision existed, its steps / criteria / thresholds / "who else knows" were
+invisible on the Knowledge screen and could not be corrected; patchEntity only
+handled string/boolean fields.
+
+  A. capture.ts - three pure, attributable list functions plus a reader:
+  addListItem / editListItem / removeListItem / listFieldValues, over the
+  editable list fields (steps, dependencies, failurePoints, whoElseKnows,
+  realCriteria, thresholds, quirks). They edit items as ordered plain strings
+  and map back on write; a process's steps (ProcessStep {order, description})
+  are renumbered 1..n on every change so order stays contiguous. Every change
+  bumps updatedAt; a no-op transform returns the input model unchanged; blank
+  adds/edits and out-of-range indices are no-ops; non-list fields and unknown
+  ids throw rather than corrupt.
+
+  REMOVAL vs rule 9: removeListItem is the ONLY removal in capture.ts. It is
+  owner-directed, item-level correction of a list the owner themselves
+  populated (e.g. a mistaken step) - an explicit, attributable edit (updatedAt
+  bumps), not a silent drop. No entity is ever deleted. This extends the
+  existing owner-authoritative edit path (patchEntity already replaces string
+  values); the module header comment was updated to say so accurately.
+
+  B. KnowledgeScreen.tsx - the entity card now renders each list field with an
+  inline editor: every item is a text input (commits on blur / Enter) with a
+  Remove button, plus an "Add another" row. Scalar-field editing and the bulk
+  newline Add form are unchanged. patchEntity still ignores array fields, so
+  the scalar "Save changes" path cannot clobber a list.
+
+  Frozen schema untouched; no new dependencies. 82 tests (was 74): capture
+  list-field unit tests (7, incl. step renumber on middle-removal, string[]
+  edit/remove, purity, no-op/throw guards) + a KnowledgeScreen component test
+  (real DOM add/edit/remove on a process step list). Clean build + lint.
+  Branch off master, independent of the encryption and LLM branches. | Proposed.
