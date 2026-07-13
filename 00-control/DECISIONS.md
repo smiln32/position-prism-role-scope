@@ -428,3 +428,24 @@ resolved by keeping every entry.
   16 encryption + 2 reconciliation), clean build + lint. Frozen schema
   untouched throughout. Remaining follow-up: an optional real-browser spot-check
   of the passphrase flow (jsdom + real WebCrypto already exercise it). | Merged.
+
+2026-07-13 | Perf (Claude Code, branch perf/code-split-screens, /impeccable
+optimize) | Route-level code splitting. The app shipped as a single ~283KB /
+87KB-gzip chunk; the Home/New/Project shell is all a first visit needs. The six
+navigation-only screens (Interview, Documents, Knowledge, Deliverables,
+Dashboard, ModelInspector) are now React.lazy() imports behind one Suspense
+boundary in App.tsx, so their heavy deps - the 8-track interview engine, the
+nine deliverable renderers, document extraction, dashboard metrics, and the
+7KB demo fixture - split out of the initial bundle and load on first navigation
+to each screen.
+
+  MEASURED (production build, before -> after): initial JS 87.2KB -> 69.0KB
+  gzip (~21% smaller; 283KB -> 222.7KB raw). Deferred chunks are 1-5KB gzip
+  each, loaded on demand; the demo fixture.ts moved into the dev-only
+  ModelInspector chunk, out of the production initial load. Verified: 106 tests
+  pass, clean build + lint. No behavior change (the eager Home/New/Project path
+  and every screen render identically; Suspense fallback is a quiet "Opening…"
+  that is imperceptible for local 1-5KB chunks). Honest note: the app was
+  already fast (local-first, no network/images/web-fonts) - this is a real
+  payload/parse win and future-proofing as more screens land, not a fix for a
+  perceived slowness. Frozen schema untouched; no dependency changes. | Proposed.
