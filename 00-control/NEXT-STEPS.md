@@ -6,27 +6,27 @@ For the fuller roadmap and architecture, read `EXPANSION-HANDOFF.md` (§4 map,
 
 ---
 
-## 1. Current state (as of 2026-07-12)
+## 1. Current state (as of 2026-07-13)
 
-The staged build (Stages 0–8) is complete and approved on `master`. Since then,
-two expansion PRs have **merged to master** and one is **still open as a draft**.
+The staged build (Stages 0–8) is complete and approved on `master`. Five
+expansion PRs have now **merged to master**; only the LLM adapter is still open
+(a draft, blocked on your API-key check).
 
 | PR | Branch | Status | Notes |
 |----|--------|--------|-------|
 | #1 | `maintenance/merge-report-timestamp-fix` | **Merged** ✅ | Merge report counts content changes only, not timestamp bumps |
-| #2 | `feature/structured-knowledge-capture` | **Merged** ✅ | Direct structured capture + owner-facing Knowledge screen + jsdom component tests. Brought dev-deps `jsdom` + `@testing-library/*` to master. A small doc-file conflict (DECISIONS/STATE) was resolved by keeping both sides. |
-| #3 | `feature/llm-interview-adapter` | **Open — DRAFT** ⏸️ | Optional Anthropic (Haiku) interview adapter. Engine logic unit-tested; **the live network + async UI path is NOT browser-verified.** Do not merge until it is (see item 3B below). |
-| #4 | `feature/data-at-rest-encryption` | **Open — PR** 🔐 | Passphrase protection for localStorage (item 3B). Behind the StorageLike seam; frozen schema untouched; passphrase memory-only. 90 tests on that branch. |
-| #5 | `feature/list-field-editing` | **Open — PR** ✅ | Finish structured capture (item 3C): array fields editable item-by-item. 82 tests on that branch. |
-| #6 | `feature/storage-durability` | **Open — PR** 🛟 | Robustness item E (non-speculative parts): collision-proof `newId` + a one-deep backup slot with corrupt-primary recovery and quota-aware save errors. 80 tests. |
+| #2 | `feature/structured-knowledge-capture` | **Merged** ✅ | Direct structured capture + owner-facing Knowledge screen + jsdom component tests. Brought dev-deps `jsdom` + `@testing-library/*` to master. |
+| #3 | `feature/llm-interview-adapter` | **Open — DRAFT** ⏸️ | Optional Anthropic (Haiku) interview adapter. Engine logic unit-tested; **the live network + async UI path is NOT browser-verified.** Do not merge until it is (see item 3A below). |
+| #4 | `feature/data-at-rest-encryption` | **Merged** 🔐 | Passphrase protection for localStorage behind the StorageLike seam; frozen schema untouched; passphrase memory-only. |
+| #5 | `feature/list-field-editing` | **Merged** ✅ | Finish structured capture (item 3C): array fields editable item-by-item. |
+| #6 | `feature/storage-durability` | **Merged** 🛟 | Robustness item E (non-speculative parts): collision-proof `newId` + a one-deep backup slot with corrupt-primary recovery and quota-aware save errors. |
 
-**Merged code is green:** 74 tests pass, clean build, clean lint.
+**Merged code is green:** 106 tests pass, clean build, clean lint.
 
-> Merge note: PRs #4, #5, #6 all branch off master and each edits the control
-> docs — expect a small doc reconciliation on each after the first. Code is
-> mostly disjoint, with ONE real interaction: #6 adds `successor:project-backup:`
-> keys that #4's vault does not encrypt. If both merge, widen the vault's
-> project-key predicate to cover backups (see DECISIONS 2026-07-13, #6 entry).
+> On the #4/#6 merge, the flagged interaction was resolved: the encryption
+> vault now also seals #6's `successor:project-backup:` keys (`isManagedKey` =
+> project OR backup prefix), so backups are ciphertext at rest and recoverable.
+> See DECISIONS 2026-07-13 "Gate / Integration".
 
 `master` now contains everything except the LLM adapter. Nothing is on fire.
 
@@ -39,7 +39,7 @@ $env:Path = "C:\Program Files\nodejs;" + $env:Path   # PowerShell: node/npm not 
 cd app
 npm install
 npm run build     # tsc -b && vite build
-npm test          # vitest run  → expect 74 passing
+npm test          # vitest run  → expect 106 passing
 npm run lint      # oxlint
 ```
 If the baseline isn't clean, **stop and fix before adding anything.** Never
@@ -75,7 +75,12 @@ the live path has never run against a real key.
 
 > Note: I (Claude) cannot do step 3 — it needs your API key. Everything else I can.
 
-### B. Data-at-rest encryption — recommended, security-motivated
+### B. Data-at-rest encryption — ✅ DONE in PR #4 (`feature/data-at-rest-encryption`)
+Built 2026-07-13 exactly as proposed below; see `DECISIONS.md` 2026-07-13 and
+`08-docs/SECURITY.md`. Remaining before merge: review, and (optional) a real
+browser spot-check on top of the jsdom + real-WebCrypto coverage. The original
+proposal, for reference:
+
 A 2026-07-12 security look found the one real exposure: **the knowledge model is
 stored in `localStorage` as plaintext.** Anyone with access to the machine or
 browser profile can read the whole thing via devtools. Everything else is sound

@@ -13,7 +13,9 @@ import {
   endSession,
   PROJECT_FORMAT_VERSION,
   type ProjectFile,
+  type StorageLike,
 } from './project/store';
+import { EncryptedStorage, isVaultConfigured, VAULT_KEY } from './project/vault';
 
 type Screen =
   | { name: 'home' }
@@ -44,8 +46,50 @@ function fmt(iso: string): string {
   } catch { return iso; }
 }
 
+/** Actions the app shell exposes for passphrase protection. */
+interface Security {
+  isEncrypted: boolean;
+  onLock: () => void;
+  enable: (passphrase: string) => Promise<void>;
+  disable: () => Promise<void>;
+}
+
+/**
+ * The app gate. If this computer has passphrase protection configured, the
+ * app is locked until the owner unlocks it; otherwise it opens directly over
+ * plaintext localStorage. `storage === window.localStorage` means plaintext
+ * mode; an EncryptedStorage instance means an unlocked vault.
+ */
 export default function App() {
-  const store = useMemo(() => new ProjectStore(window.localStorage), []);
+  const [storage, setStorage] = useState<StorageLike | null>(() =>
+    isVaultConfigured(window.localStorage) ? null : window.localStorage,
+  );
+
+  if (storage === null) {
+    return <UnlockScreen onOpened={(s) => setStorage(s)} />;
+  }
+
+  const security: Security = {
+    isEncrypted: storage !== window.localStorage,
+    onLock: () => setStorage(null),
+    enable: async (passphrase) => {
+      const vault = await EncryptedStorage.enable(window.localStorage, passphrase);
+      await vault.flush();
+      setStorage(vault);
+    },
+    disable: async () => {
+      if (storage instanceof EncryptedStorage) {
+        await storage.disable();
+        setStorage(window.localStorage);
+      }
+    },
+  };
+
+  return <MainApp storage={storage} security={security} />;
+}
+
+function MainApp({ storage, security }: { storage: StorageLike; security: Security }) {
+  const store = useMemo(() => new ProjectStore(storage), [storage]);
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [refresh, setRefresh] = useState(0);
   const bump = () => setRefresh((n) => n + 1);
@@ -53,7 +97,7 @@ export default function App() {
   return (
     <main>
       {screen.name === 'home' && (
-        <HomeScreen key={refresh} store={store} go={setScreen} />
+        <HomeScreen key={refresh} store={store} go={setScreen} security={security} />
       )}
       {screen.name === 'new-project' && (
         <NewProjectScreen store={store} go={setScreen} />
@@ -94,7 +138,11 @@ export default function App() {
   );
 }
 
-function HomeScreen({ store, go }: { store: ProjectStore; go: (s: Screen) => void }) {
+function HomeScreen({
+  store, go, security,
+}: {
+  store: ProjectStore; go: (s: Screen) => void; security: Security;
+}) {
   const [error, setError] = useState('');
   const projects = store.list();
 
@@ -151,6 +199,8 @@ function HomeScreen({ store, go }: { store: ProjectStore; go: (s: Screen) => voi
       </div>
       {error && <p className="small" style={{ color: '#8b2f2f', marginTop: '0.75rem' }}>{error}</p>}
 
+      <SecurityPanel security={security} />
+
       <p className="small muted" style={{ marginTop: '2.5rem' }}>
         <a href="#inspector" onClick={(e) => { e.preventDefault(); go({ name: 'inspector' }); }}>
           Model inspector
@@ -158,6 +208,191 @@ function HomeScreen({ store, go }: { store: ProjectStore; go: (s: Screen) => voi
         (developer view)
       </p>
     </section>
+  );
+}
+
+const RED = '#8b2f2f';
+
+function downloadText(text: string, filename: string): void {
+  const blob = new Blob([text], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/** Home-screen control for turning passphrase protection on or off. */
+function SecurityPanel({ security }: { security: Security }) {
+  const [opening, setOpening] = useState(false);
+  const [pass, setPass] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [ack, setAck] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  if (security.isEncrypted) {
+    return (
+      <div style={{ marginTop: '2.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e3e0da' }}>
+        <h2 style={{ marginTop: 0 }}>This computer is protected</h2>
+        <p className="why">
+          Your projects are stored on this computer behind your passphrase. When
+          the app is locked, they cannot be read from the browser or the disk
+          without it. Your passphrase is never saved anywhere - keep an exported
+          project file as a backup, because a forgotten passphrase cannot be
+          recovered.
+        </p>
+        <div className="row">
+          <button onClick={security.onLock}>Lock now</button>
+          <button className="quiet" onClick={() => {
+            if (window.confirm('Remove passphrase protection? Your projects will be stored as plain text on this computer again.'))
+              void security.disable();
+          }}>
+            Remove protection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const turnOn = async () => {
+    setError('');
+    if (pass.length < 8) { setError('Please choose a passphrase of at least 8 characters.'); return; }
+    if (pass !== confirm) { setError('The two passphrases do not match.'); return; }
+    if (!ack) { setError('Please confirm you understand a forgotten passphrase cannot be recovered.'); return; }
+    setBusy(true);
+    try {
+      await security.enable(pass);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not turn on protection.');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: '2.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e3e0da' }}>
+      <h2 style={{ marginTop: 0 }}>Protect this computer</h2>
+      <p className="why">
+        Everything you enter is saved on this computer. Right now it is stored as
+        plain text, so anyone who can open this browser profile could read it.
+        You can lock it behind a passphrase - it will be asked for each time the
+        app opens.
+      </p>
+      {!opening ? (
+        <button onClick={() => setOpening(true)}>Set a passphrase</button>
+      ) : (
+        <div>
+          <label className="field">
+            <span>Choose a passphrase</span>
+            <input type="password" value={pass} autoComplete="new-password"
+              onChange={(e) => setPass(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>Type it again</span>
+            <input type="password" value={confirm} autoComplete="new-password"
+              onChange={(e) => setConfirm(e.target.value)} />
+          </label>
+          <label className="row" style={{ alignItems: 'flex-start', gap: '0.5rem', margin: '0.5rem 0' }}>
+            <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)}
+              style={{ marginTop: '0.3rem' }} />
+            <span className="small">
+              I understand that if I forget this passphrase, the data on this
+              computer cannot be recovered, and I will keep an exported backup.
+            </span>
+          </label>
+          {error && <p className="small" style={{ color: RED }}>{error}</p>}
+          <div className="row">
+            <button className="primary" disabled={busy} onClick={turnOn}>
+              {busy ? 'Turning on…' : 'Turn on protection'}
+            </button>
+            <button className="quiet" disabled={busy} onClick={() => {
+              setOpening(false); setPass(''); setConfirm(''); setAck(false); setError('');
+            }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Full-screen lock gate shown when this computer has passphrase protection. */
+function UnlockScreen({ onOpened }: { onOpened: (s: StorageLike) => void }) {
+  const [pass, setPass] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [showReset, setShowReset] = useState(false);
+
+  const unlock = async () => {
+    setBusy(true); setError('');
+    try {
+      onOpened(await EncryptedStorage.unlock(window.localStorage, pass));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not unlock.');
+      setBusy(false);
+    }
+  };
+
+  const resetAfterBackup = () => {
+    if (!window.confirm('Download an encrypted backup and then clear the protected data on this computer? This is only reversible if you later remember the passphrase and restore the backup.'))
+      return;
+    // Preserve the ciphertext to a file first - nothing is destroyed outright.
+    downloadText(EncryptedStorage.exportSealed(window.localStorage), 'Successor-encrypted-backup.json');
+    const ls = window.localStorage;
+    const toClear: string[] = [];
+    for (let i = 0; i < ls.length; i++) {
+      const k = ls.key(i);
+      if (k && (k === VAULT_KEY || k.startsWith('successor:project:'))) toClear.push(k);
+    }
+    for (const k of toClear) ls.removeItem(k);
+    onOpened(ls);
+  };
+
+  return (
+    <main>
+      <section>
+        <h1>Successor</h1>
+        <p className="muted">Business Owner Knowledge Succession</p>
+        <h2>This computer is locked</h2>
+        <p className="why">
+          Your projects on this computer are protected by a passphrase. Enter it
+          to unlock them. Nothing is sent anywhere - the passphrase stays on this
+          computer, in memory only.
+        </p>
+        <label className="field">
+          <span>Passphrase</span>
+          <input type="password" value={pass} autoFocus autoComplete="current-password"
+            onChange={(e) => setPass(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !busy) void unlock(); }} />
+        </label>
+        {error && <p className="small" style={{ color: RED }}>{error}</p>}
+        <button className="primary" disabled={busy || !pass} onClick={() => void unlock()}>
+          {busy ? 'Unlocking…' : 'Unlock'}
+        </button>
+
+        <p className="small muted" style={{ marginTop: '2rem' }}>
+          <a href="#reset" onClick={(e) => { e.preventDefault(); setShowReset((v) => !v); }}>
+            Forgotten your passphrase?
+          </a>
+        </p>
+        {showReset && (
+          <div className="card">
+            <p className="small">
+              A forgotten passphrase cannot be recovered - the protection is real.
+              If you have an exported project file, you can start over and restore
+              from it. This will save an encrypted backup of the current data to a
+              file (openable only with the original passphrase), then clear this
+              computer so you can begin again.
+            </p>
+            <button className="quiet" onClick={resetAfterBackup}>
+              Save encrypted backup and start over
+            </button>
+          </div>
+        )}
+      </section>
+      <Disclaimer />
+    </main>
   );
 }
 

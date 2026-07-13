@@ -2,7 +2,8 @@
 
 Last updated: 2026-07-13
 Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
-Expansion in progress on branches (see EXPANSION-HANDOFF.md / NEXT-STEPS.md).
+Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; the LLM adapter (#3) is the
+only open branch (see EXPANSION-HANDOFF.md / NEXT-STEPS.md).
 Next stage: none. The staged build plan is complete. Future work (API
 adapter, Role DNA schema sharing, cloud sync) proceeds via HANDOFF.md and
 new logged decisions.
@@ -63,11 +64,28 @@ new logged decisions.
   nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
-- Test suite: 74 tests passing on master (+1 end-to-end acceptance run)
-- PROPOSED (branch feature/list-field-editing, PR open): finish structured
-  capture - array fields are now editable item-by-item, not add-only.
-- PROPOSED (branch feature/storage-durability, PR open): robustness item E
-  (non-speculative parts), model/store layer only, no UI threading.
+- Test suite: 106 tests passing on master (+1 end-to-end acceptance run)
+- MERGED to master 2026-07-13 (PRs #5, #6, #4; see DECISIONS.md 2026-07-13):
+  * #5 feature/list-field-editing - array fields (a process's steps, a
+    decision's criteria, …) editable item-by-item via addListItem/editListItem/
+    removeListItem/listFieldValues in capture.ts + an inline list editor in
+    KnowledgeScreen.tsx. Steps renumber 1..n; removal is owner-directed item
+    correction (the only removal, never a silent drop).
+  * #6 feature/storage-durability - collision-proof newId (full 122-bit UUID)
+    and a one-deep backup slot in store.ts (BACKUP_PREFIX): save backs up the
+    current *valid* primary; load recovers from backup on a missing/corrupt
+    primary; quota failure -> clear error, prior primary intact; remove clears
+    the backup. mergeModels() intentionally still NOT wired (deferred to a real
+    sync path).
+  * #4 feature/data-at-rest-encryption - passphrase protection behind the
+    StorageLike seam. crypto.ts (WebCrypto PBKDF2(250k)/AES-GCM, no new deps),
+    vault.ts (EncryptedStorage; in-memory decrypted working copy, serialized
+    encrypt-through; enable/unlock/disable/flush/exportSealed), App.tsx unlock
+    gate + "Protect this computer" panel, 08-docs/SECURITY.md. Passphrase is
+    memory-only (rule 4).
+  * Reconciliation on merge: the vault now also encrypts #6's backup keys
+    (isManagedKey = project OR backup prefix), so backups are sealed at rest
+    and recoverable. Frozen schema untouched throughout.
 - MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
   excludes 'updatedAt' from the content-change loop so a pure timestamp bump
   reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;
