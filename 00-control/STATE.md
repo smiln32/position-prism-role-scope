@@ -1,7 +1,8 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-10
-Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE pending final approval.
+Last updated: 2026-07-13
+Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
+Expansion in progress on branches (see EXPANSION-HANDOFF.md / NEXT-STEPS.md).
 Next stage: none. The staged build plan is complete. Future work (API
 adapter, Role DNA schema sharing, cloud sync) proceeds via HANDOFF.md and
 new logged decisions.
@@ -62,7 +63,20 @@ new logged decisions.
   nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
-- Test suite: 74 tests passing (+1 end-to-end acceptance run)
+- Test suite: 74 tests passing on master (+1 end-to-end acceptance run)
+- PROPOSED (branch feature/data-at-rest-encryption, PR open): data-at-rest
+  encryption. Behind the StorageLike seam so ProjectStore + screens stay
+  synchronous and the frozen schema is untouched.
+  * app/src/project/crypto.ts - WebCrypto-only PBKDF2(250k)/AES-GCM, no new
+    deps; envelope "v1:<iv>:<ct>".
+  * app/src/project/vault.ts - EncryptedStorage implements StorageLike;
+    decrypted working copy in memory, serialized encrypt-through on write;
+    enable/unlock/disable/flush + exportSealed for locked-out recovery.
+  * app/src/App.tsx - unlock gate (locked => UnlockScreen), home-screen
+    "Protect this computer" panel (enable/lock/remove), passphrase memory-only.
+  * 08-docs/SECURITY.md - user-facing explanation + honest limits.
+  * Tests: crypto.test.ts (6), vault.test.ts (8), security.test.tsx (2).
+    90 tests total; clean build + lint. See DECISIONS.md 2026-07-13.
 - MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
   excludes 'updatedAt' from the content-change loop so a pure timestamp bump
   reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;

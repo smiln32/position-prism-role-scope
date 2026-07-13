@@ -1,6 +1,6 @@
 # NEXT STEPS — where to pick up
 
-_Last updated: 2026-07-12. This is the short, current "where do I start" note.
+_Last updated: 2026-07-13. This is the short, current "where do I start" note.
 For the fuller roadmap and architecture, read `EXPANSION-HANDOFF.md` (§4 map,
 §5 non-negotiables, §6 full roadmap A–H). Read `CLAUDE.md` before writing code._
 
@@ -16,6 +16,7 @@ two expansion PRs have **merged to master** and one is **still open as a draft**
 | #1 | `maintenance/merge-report-timestamp-fix` | **Merged** ✅ | Merge report counts content changes only, not timestamp bumps |
 | #2 | `feature/structured-knowledge-capture` | **Merged** ✅ | Direct structured capture + owner-facing Knowledge screen + jsdom component tests. Brought dev-deps `jsdom` + `@testing-library/*` to master. A small doc-file conflict (DECISIONS/STATE) was resolved by keeping both sides. |
 | #3 | `feature/llm-interview-adapter` | **Open — DRAFT** ⏸️ | Optional Anthropic (Haiku) interview adapter. Engine logic unit-tested; **the live network + async UI path is NOT browser-verified.** Do not merge until it is (see item 3B below). |
+| #4 | `feature/data-at-rest-encryption` | **Open — PR** 🔐 | Passphrase protection for localStorage (roadmap item B). Behind the StorageLike seam; frozen schema untouched; passphrase memory-only. 90 tests, clean build+lint. Verified via jsdom + real WebCrypto; an optional real-browser spot-check is the one thing not yet done. |
 
 **Merged code is green:** 74 tests pass, clean build, clean lint.
 
@@ -66,7 +67,12 @@ the live path has never run against a real key.
 
 > Note: I (Claude) cannot do step 3 — it needs your API key. Everything else I can.
 
-### B. Data-at-rest encryption — recommended, security-motivated
+### B. Data-at-rest encryption — ✅ DONE in PR #4 (`feature/data-at-rest-encryption`)
+Built 2026-07-13 exactly as proposed below; see `DECISIONS.md` 2026-07-13 and
+`08-docs/SECURITY.md`. Remaining before merge: review, and (optional) a real
+browser spot-check on top of the jsdom + real-WebCrypto coverage. The original
+proposal, for reference:
+
 A 2026-07-12 security look found the one real exposure: **the knowledge model is
 stored in `localStorage` as plaintext.** Anyone with access to the machine or
 browser profile can read the whole thing via devtools. Everything else is sound

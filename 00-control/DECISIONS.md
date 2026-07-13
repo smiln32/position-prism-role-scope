@@ -264,6 +264,54 @@ Decision Playbook, and Memory Archive render mostly "Not yet captured".
   the jsdom component tests (real DOM render + events). Branch off master,
   independent of the LLM adapter. Awaiting Carla's review. | Proposed.
 
+2026-07-13 | Expansion (Claude Code, branch feature/data-at-rest-encryption,
+baseline re-verified 74/74) | Data-at-rest encryption (roadmap item B in
+NEXT-STEPS / EXPANSION-HANDOFF §6). Addresses the one real exposure a
+2026-07-12 security look found: the knowledge model was stored in localStorage
+as plaintext, readable by anyone with the machine or browser profile via
+devtools.
+
+  DESIGN: all crypto lives behind the existing StorageLike seam, so
+  ProjectStore and every screen stay synchronous and untouched (the frozen
+  schema is likewise untouched). Two new modules, both zero-app-dependency so
+  they can travel with the shared knowledge-model package later:
+  * app/src/project/crypto.ts - WebCrypto only, NO new npm deps. PBKDF2-SHA256
+    (250k iterations) stretches the passphrase; AES-GCM 256 seals each value
+    with a fresh 12-byte IV; envelope format "v1:<b64 iv>:<b64 ciphertext>".
+  * app/src/project/vault.ts - EncryptedStorage implements StorageLike. It
+    keeps decrypted project entries in an in-memory Map (the session's working
+    copy) so reads/writes remain synchronous; writes update the Map, then
+    encrypt through to localStorage on a serialized async queue (flush()
+    awaits them). enable() adopts existing plaintext projects and re-seals
+    them in place (self-healing if interrupted); unlock() verifies the
+    passphrase against a sealed check-token before touching any data; disable()
+    rewrites plaintext and drops the marker.
+
+  CREDENTIALS RULE (rule 4): the passphrase and derived key are memory-only,
+  never written anywhere. The vault marker on disk holds only a non-secret
+  salt, the KDF parameters, and the sealed check-token.
+
+  NEVER-DELETE RULE (rule 9): the locked-out recovery path (UnlockScreen
+  "Forgotten your passphrase?") downloads an encrypted backup of the ciphertext
+  BEFORE clearing this computer, so a reset preserves rather than destroys.
+  Export stays plaintext - the owner's explicit backup action.
+
+  OPT-IN, not mandatory: existing plaintext projects keep working; the owner
+  turns protection on from the home screen (passphrase twice + an explicit
+  "cannot be recovered" acknowledgement). This avoids stranding anyone behind a
+  forgotten passphrase and keeps the additive, no-regression posture.
+
+  THREAT SCOPE (documented honestly in 08-docs/SECURITY.md): this protects data
+  AT REST. It does not defend an already-unlocked running session - the app
+  must operate on plaintext in memory - and the app-level PBKDF2 is a real but
+  not hardware-grade KDF. Deferred follow-ups: change-passphrase, and a real
+  browser spot-check on top of the jsdom + real-WebCrypto component coverage.
+
+  90 tests passing (was 74): crypto.test.ts (6), vault.test.ts (8, incl. a
+  ProjectStore-over-vault end-to-end and an at-rest "no plaintext leaks"
+  assertion), security.test.tsx (2, real DOM enable/lock/unlock/remove).
+  Clean build + lint. | Proposed.
+
 2026-07-10 | Maintenance (Claude Code, baseline re-verified 57/57) | Merge
 report fidelity fix: mergeEntity excluded 'updatedAt' from the content-
 change loop (now consistent with 'createdAt'/'sources'/'verified', which
