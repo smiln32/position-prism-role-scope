@@ -1,7 +1,8 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-10
-Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE pending final approval.
+Last updated: 2026-07-13
+Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
+Expansion in progress on branches (see EXPANSION-HANDOFF.md / NEXT-STEPS.md).
 Next stage: none. The staged build plan is complete. Future work (API
 adapter, Role DNA schema sharing, cloud sync) proceeds via HANDOFF.md and
 new logged decisions.
@@ -62,7 +63,20 @@ new logged decisions.
   nudge, copy polish, 08-docs/HELP.md + DISCLAIMER.md; audits in
   07-testing/stage8-audits.md; acceptance run report in
   07-testing/stage8-acceptance-report.md
-- Test suite: 74 tests passing (+1 end-to-end acceptance run)
+- Test suite: 74 tests passing on master (+1 end-to-end acceptance run)
+- PROPOSED (branch feature/storage-durability, PR open): robustness item E
+  (non-speculative parts), model/store layer only, no UI threading.
+  * app/src/knowledge-model/model.ts - newId now uses the full 122-bit UUID
+    (was 8 hex / 32 bits) with getRandomValues + Math.random fallbacks;
+    collision-proof so a save can't fail validation on a dup id.
+  * app/src/project/store.ts - one-deep backup slot (BACKUP_PREFIX): save
+    backs up the current *valid* primary before overwriting; load recovers
+    from backup on a missing/corrupt primary; quota failure -> clear error,
+    prior primary intact; remove clears the backup. list() unaffected.
+  * mergeModels() intentionally still NOT wired (deferred to a real sync path).
+  * Tests: +1 newId uniqueness, +5 store durability. 80 total; clean build +
+    lint. See DECISIONS.md 2026-07-13 (feature/storage-durability), incl. the
+    cross-branch note to re-cover backups if merged with the encryption PR.
 - MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
   excludes 'updatedAt' from the content-change loop so a pure timestamp bump
   reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;

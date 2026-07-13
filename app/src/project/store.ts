@@ -86,6 +86,14 @@ export interface StorageLike {
 }
 
 const PREFIX = 'successor:project:';
+/**
+ * A one-deep backup slot per project. Chosen NOT to start with PREFIX so
+ * list() never mistakes a backup for a project. Each save copies the current
+ * (validated) primary here before overwriting, and load() recovers from it if
+ * the primary is missing or corrupt - so a bad write costs at most the single
+ * most recent change, never the whole project.
+ */
+const BACKUP_PREFIX = 'successor:project-backup:';
 
 export function validateProjectFile(p: unknown): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -112,21 +120,57 @@ export class ProjectStore {
     this.storage = storage;
   }
 
+  /** Parse and validate a stored value; null if absent, unparseable, or invalid. */
+  private tryLoad(raw: string | null): ProjectFile | null {
+    if (raw === null) return null;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (validateProjectFile(parsed).length > 0) return null;
+      return parsed as ProjectFile;
+    } catch {
+      return null;
+    }
+  }
+
   save(project: ProjectFile): void {
     const errors = validateProjectFile(project);
     if (errors.length > 0)
       throw new Error('Refusing to save an invalid project: ' + errors.map((e) => `${e.path}: ${e.message}`).join('; '));
-    this.storage.setItem(PREFIX + project.model.projectId, JSON.stringify(project));
+    const key = PREFIX + project.model.projectId;
+    const json = JSON.stringify(project);
+
+    // Preserve the current primary as a backup first, but only if it is itself
+    // valid - never let corruption reach the backup. Best-effort: a failed
+    // backup write must not block the real save.
+    const current = this.storage.getItem(key);
+    if (current !== null && current !== json && this.tryLoad(current)) {
+      try {
+        this.storage.setItem(BACKUP_PREFIX + project.model.projectId, current);
+      } catch { /* backup is best-effort */ }
+    }
+
+    try {
+      this.storage.setItem(key, json);
+    } catch {
+      // The likely cause is a full quota. The prior primary is untouched (this
+      // write failed), so nothing on disk was lost; tell the owner how to recover.
+      throw new Error(
+        "Could not save to this computer's storage - it may be full. Export this project to keep a copy, then remove older projects to free space.",
+      );
+    }
   }
 
   load(projectId: string): ProjectFile {
-    const raw = this.storage.getItem(PREFIX + projectId);
-    if (raw === null) throw new Error(`No saved project with id "${projectId}".`);
-    const parsed: unknown = JSON.parse(raw);
-    const errors = validateProjectFile(parsed);
-    if (errors.length > 0)
-      throw new Error('Saved project failed validation: ' + errors.map((e) => `${e.path}: ${e.message}`).join('; '));
-    return migrateProject(parsed as ProjectFile);
+    const primaryRaw = this.storage.getItem(PREFIX + projectId);
+    const primary = this.tryLoad(primaryRaw);
+    if (primary) return migrateProject(primary);
+
+    // Primary missing or corrupt: fall back to the last good backup.
+    const backup = this.tryLoad(this.storage.getItem(BACKUP_PREFIX + projectId));
+    if (backup) return migrateProject(backup);
+
+    if (primaryRaw === null) throw new Error(`No saved project with id "${projectId}".`);
+    throw new Error(`Saved project "${projectId}" is unreadable and no backup could be recovered.`);
   }
 
   list(): { projectId: string; businessName: string; updatedAt: string; sessionCount: number }[] {
@@ -151,6 +195,8 @@ export class ProjectStore {
 
   remove(projectId: string): void {
     this.storage.removeItem(PREFIX + projectId);
+    // Clear the backup too, or load() could recover a "deleted" project.
+    this.storage.removeItem(BACKUP_PREFIX + projectId);
   }
 
   exportJson(projectId: string): string {

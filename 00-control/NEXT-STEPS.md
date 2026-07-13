@@ -1,6 +1,6 @@
 # NEXT STEPS — where to pick up
 
-_Last updated: 2026-07-12. This is the short, current "where do I start" note.
+_Last updated: 2026-07-13. This is the short, current "where do I start" note.
 For the fuller roadmap and architecture, read `EXPANSION-HANDOFF.md` (§4 map,
 §5 non-negotiables, §6 full roadmap A–H). Read `CLAUDE.md` before writing code._
 
@@ -16,8 +16,17 @@ two expansion PRs have **merged to master** and one is **still open as a draft**
 | #1 | `maintenance/merge-report-timestamp-fix` | **Merged** ✅ | Merge report counts content changes only, not timestamp bumps |
 | #2 | `feature/structured-knowledge-capture` | **Merged** ✅ | Direct structured capture + owner-facing Knowledge screen + jsdom component tests. Brought dev-deps `jsdom` + `@testing-library/*` to master. A small doc-file conflict (DECISIONS/STATE) was resolved by keeping both sides. |
 | #3 | `feature/llm-interview-adapter` | **Open — DRAFT** ⏸️ | Optional Anthropic (Haiku) interview adapter. Engine logic unit-tested; **the live network + async UI path is NOT browser-verified.** Do not merge until it is (see item 3B below). |
+| #4 | `feature/data-at-rest-encryption` | **Open — PR** 🔐 | Passphrase protection for localStorage (item 3B). Behind the StorageLike seam; frozen schema untouched; passphrase memory-only. 90 tests on that branch. |
+| #5 | `feature/list-field-editing` | **Open — PR** ✅ | Finish structured capture (item 3C): array fields editable item-by-item. 82 tests on that branch. |
+| #6 | `feature/storage-durability` | **Open — PR** 🛟 | Robustness item E (non-speculative parts): collision-proof `newId` + a one-deep backup slot with corrupt-primary recovery and quota-aware save errors. 80 tests. |
 
 **Merged code is green:** 74 tests pass, clean build, clean lint.
+
+> Merge note: PRs #4, #5, #6 all branch off master and each edits the control
+> docs — expect a small doc reconciliation on each after the first. Code is
+> mostly disjoint, with ONE real interaction: #6 adds `successor:project-backup:`
+> keys that #4's vault does not encrypt. If both merge, widen the vault's
+> project-key predicate to cover backups (see DECISIONS 2026-07-13, #6 entry).
 
 `master` now contains everything except the LLM adapter. Nothing is on fire.
 
@@ -99,9 +108,15 @@ depends on the live path working.
 
 ### E. Further out (see `EXPANSION-HANDOFF.md §6 D–H)
 Role DNA schema sharing (extract `knowledge-model/` into a shared package),
-robustness (stronger ids, autosave/backup, wire the built-but-unused
-`mergeModels()` for cloud sync), real PDF export, and the process-level evidence
-gaps (browser screenshots, a real WCAG audit).
+robustness, real PDF export, and the process-level evidence gaps (browser
+screenshots, a real WCAG audit).
+
+**Robustness — partly done in PR #6 (`feature/storage-durability`):**
+collision-proof `newId` and a backup/recovery + quota-aware save layer landed
+(see DECISIONS 2026-07-13). Still open: `mergeModels()` remains intentionally
+unwired — do it only when a real cloud-sync path lands, not before (wiring it
+speculatively is build-ahead). Optional file-system persistence is also still
+open.
 
 ---
 

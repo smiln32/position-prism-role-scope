@@ -276,3 +276,47 @@ changes only the human-facing MergeReport labeling, not merge semantics
 frozen Stage 1 schema. Added a regression test asserting a newer timestamp
 with identical content reports 'unchanged'. Branch
 maintenance/merge-report-timestamp-fix, awaiting Carla's review. | Proposed.
+
+2026-07-13 | Expansion (Claude Code, branch feature/storage-durability,
+baseline re-verified 74/74) | Robustness & durability (roadmap item E, the
+non-speculative parts). Two concrete data-safety fixes at the model/store
+layer; NO UI threading and NO mergeModels() wiring (the handoff defers that
+until a real sync path exists - wiring it now would be build-ahead).
+
+  A. Collision-resistant ids (model.ts). newId kept only the first 8 hex chars
+  of a UUID (32 bits; ~50% birthday collision by ~77k ids). Because
+  validateModel rejects duplicate ids, a collision would fail the very save it
+  belongs to and lose the new entity. Now newId uses the full 122-bit UUID,
+  with a getRandomValues (16-byte hex) fallback and a widened Math.random
+  last resort. The readable prefix (rel_/proc_/…) is preserved. Test: 20k
+  draws, all unique, prefix intact.
+
+  B. Durable saves (store.ts). Added a one-deep backup slot per project under
+  BACKUP_PREFIX = 'successor:project-backup:' (deliberately NOT under PREFIX,
+  so list() never sees a phantom project):
+  * save() copies the current primary to the backup BEFORE overwriting - but
+    only if that current value is itself valid, so corruption never reaches
+    the backup; the backup write is best-effort and never blocks the real save.
+  * save() maps a failed primary write (the likely cause is a full quota) to a
+    clear, actionable error; the prior primary is untouched, so nothing on disk
+    is lost.
+  * load() transparently recovers from the backup when the primary is missing
+    or corrupt (unparseable/invalid), costing at most the single most recent
+    change rather than the whole project. Missing+no-backup still throws the
+    existing "No saved project" message.
+  * remove() now clears the backup too, or a deleted project could resurrect
+    from its backup on the next load.
+
+  Frozen schema untouched; no new dependencies; no behavior change on the happy
+  path (existing 74 pass unchanged). 80 tests (was 74): +1 newId uniqueness,
+  +5 store durability (recover-from-corrupt, never-back-up-corruption, quota
+  error with primary intact, remove-clears-backup, list-ignores-backups).
+  Clean build + lint.
+
+  CROSS-BRANCH NOTE for whoever merges this WITH feature/data-at-rest-encryption
+  (PR #4): that branch's EncryptedStorage only encrypts keys under
+  'successor:project:'. The new backup keys use 'successor:project-backup:', so
+  if both land, backups would be written in PLAINTEXT, undercutting the
+  encryption guarantee. Reconciliation: widen the vault's project-key predicate
+  to also cover the backup prefix (and include backups in enable/unlock/disable
+  and exportSealed). Flagged so it is not missed. | Proposed.
