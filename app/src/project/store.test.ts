@@ -107,3 +107,75 @@ describe('Stage 2 acceptance: create, close, resume - lossless', () => {
     expect(() => store.load('ghost')).toThrow('No saved project');
   });
 });
+
+describe('durability: backup, recovery, and quota handling', () => {
+  const KEY = 'successor:project:walkthrough-1';
+  const BACKUP = 'successor:project-backup:walkthrough-1';
+
+  it('recovers the last good save when the primary is corrupted', () => {
+    const disk = fakeStorage();
+    const store = new ProjectStore(disk);
+    // First good save (no backup yet), then a second save that establishes a backup.
+    store.save(newProject());
+    let p = newProject();
+    p = startSession(p, 'Second sitting').project;
+    store.save(p); // primary = v2, backup = v1
+
+    // A corrupting write to the primary (partial flush, tampering, …).
+    disk.setItem(KEY, '{ this is not valid json');
+    expect(disk.getItem(BACKUP)).not.toBeNull();
+
+    // load() transparently recovers the last good state from the backup.
+    const recovered = store.load('walkthrough-1');
+    expect(recovered.model.profile.businessName).toBe('Walkthrough Co (fixture)');
+    expect(recovered.sessions).toHaveLength(0); // v1, the last state the backup held
+  });
+
+  it('never writes a corrupt value into the backup slot', () => {
+    const disk = fakeStorage();
+    const store = new ProjectStore(disk);
+    store.save(newProject());            // v1 -> primary
+    disk.setItem(KEY, 'garbage');        // primary corrupted before next save
+    const p = startSession(newProject(), 'x').project;
+    store.save(p);                       // v2 -> primary; backup must NOT become "garbage"
+    expect(disk.getItem(BACKUP)).toBeNull(); // corrupt current was not backed up
+    expect(store.load('walkthrough-1').sessions).toHaveLength(1); // primary is the good v2
+  });
+
+  it('surfaces a clear, recoverable error when storage is full', () => {
+    const disk = fakeStorage();
+    const store = new ProjectStore(disk);
+    store.save(newProject());
+    // Simulate a full quota on the next primary write.
+    const realSet = disk.setItem;
+    disk.setItem = (k: string, v: string) => {
+      if (k === KEY) throw new DOMException('full', 'QuotaExceededError');
+      realSet(k, v);
+    };
+    expect(() => store.save(startSession(newProject(), 'x').project)).toThrow(/may be full/i);
+    // The prior good primary is untouched - nothing was lost.
+    disk.setItem = realSet;
+    expect(store.load('walkthrough-1').sessions).toHaveLength(0);
+  });
+
+  it('remove() clears the backup so a deleted project cannot resurrect', () => {
+    const disk = fakeStorage();
+    const store = new ProjectStore(disk);
+    store.save(newProject());
+    store.save(startSession(newProject(), 'x').project); // creates a backup
+    expect(disk.getItem(BACKUP)).not.toBeNull();
+
+    store.remove('walkthrough-1');
+    expect(disk.getItem(KEY)).toBeNull();
+    expect(disk.getItem(BACKUP)).toBeNull();
+    expect(() => store.load('walkthrough-1')).toThrow('No saved project');
+  });
+
+  it('list() ignores backup entries (no phantom duplicate projects)', () => {
+    const disk = fakeStorage();
+    const store = new ProjectStore(disk);
+    store.save(newProject());
+    store.save(startSession(newProject(), 'x').project); // now a backup exists too
+    expect(store.list()).toHaveLength(1);
+  });
+});

@@ -5,6 +5,7 @@ import {
   exportModel,
   importModel,
   entityCount,
+  newId,
 } from './model';
 import { mergeModels, findDuplicates } from './merge';
 import { fixtureModel } from './fixture';
@@ -48,6 +49,18 @@ describe('model creation and validation', () => {
     const m: KnowledgeModel = JSON.parse(JSON.stringify(fixtureModel));
     (m.entities.facts as unknown[]).push({ ...m.entities.risks[0] });
     expect(validateModel(m).some((e) => e.message.includes('does not belong'))).toBe(true);
+  });
+});
+
+describe('newId', () => {
+  it('keeps the readable prefix and has no collisions across many draws', () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 20_000; i++) {
+      const id = newId('rel');
+      expect(id.startsWith('rel_')).toBe(true);
+      seen.add(id);
+    }
+    expect(seen.size).toBe(20_000); // every id unique
   });
 });
 

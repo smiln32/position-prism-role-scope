@@ -66,14 +66,8 @@ new logged decisions.
 - Test suite: 74 tests passing on master (+1 end-to-end acceptance run)
 - PROPOSED (branch feature/list-field-editing, PR open): finish structured
   capture - array fields are now editable item-by-item, not add-only.
-  * app/src/knowledge-model/capture.ts - addListItem/editListItem/
-    removeListItem/listFieldValues (pure, attributable; steps renumber 1..n;
-    removeListItem is owner-directed item correction, the only removal, never
-    a silent drop). Frozen schema untouched.
-  * app/src/knowledge-model/KnowledgeScreen.tsx - inline list editor in the
-    entity card (edit-on-blur input + Remove per item + Add-another row).
-  * Tests: +7 capture unit, +1 KnowledgeScreen component. 82 total; clean
-    build + lint. See DECISIONS.md 2026-07-13 (feature/list-field-editing).
+- PROPOSED (branch feature/storage-durability, PR open): robustness item E
+  (non-speculative parts), model/store layer only, no UI threading.
 - MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
   excludes 'updatedAt' from the content-change loop so a pure timestamp bump
   reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;

@@ -9,11 +9,25 @@ import {
 
 const nowIso = () => new Date().toISOString();
 
+/**
+ * A collision-resistant id with a readable prefix. `validateModel` rejects any
+ * model with duplicate ids, so a colliding id would fail the save it belongs
+ * to - losing the new entity. The old form kept only 8 hex chars (32 bits, a
+ * ~50% birthday collision by ~77k ids); this uses the full 122-bit UUID, with
+ * a strong random fallback where randomUUID is unavailable.
+ */
 export function newId(prefix: string): string {
-  const rand =
-    typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID().slice(0, 8)
-      : Math.random().toString(36).slice(2, 10);
+  const c: Crypto | undefined = typeof crypto !== 'undefined' ? crypto : undefined;
+  let rand: string;
+  if (c && typeof c.randomUUID === 'function') {
+    rand = c.randomUUID();
+  } else if (c && typeof c.getRandomValues === 'function') {
+    const bytes = c.getRandomValues(new Uint8Array(16));
+    rand = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  } else {
+    // Last-resort fallback: two independent draws widen the space vs one.
+    rand = Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12);
+  }
   return `${prefix}_${rand}`;
 }
 
