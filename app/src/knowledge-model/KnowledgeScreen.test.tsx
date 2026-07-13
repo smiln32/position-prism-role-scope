@@ -3,7 +3,8 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import KnowledgeScreen from './KnowledgeScreen';
 import { createEmptyModel } from './model';
-import { addRelationship } from './capture';
+import { addRelationship, addProcess } from './capture';
+import type { ProcessEntity } from './schema';
 import { PROJECT_FORMAT_VERSION, type ProjectFile } from '../project/store';
 
 afterEach(cleanup);
@@ -65,6 +66,35 @@ describe('KnowledgeScreen (component)', () => {
 
     const saved = onSave.mock.calls[0][0] as ProjectFile;
     expect(saved.model.entities.relationships[0].verified).toBe(false);
+  });
+
+  it('adds, edits, and removes items in a process step list inline', () => {
+    const seeded = addProcess(
+      createEmptyModel('ui-list', { businessName: 'Fixture Co', ownerName: 'Owner' }),
+      { name: 'Quote review', steps: ['pull drawings', 'check tolerances'] },
+    );
+    const onSave = vi.fn();
+    render(<KnowledgeScreen project={projectWith(seeded)} onSave={onSave} onBack={() => {}} />);
+
+    const steps = (call: number) =>
+      ((onSave.mock.calls[call][0] as ProjectFile).model.entities.processes[0] as ProcessEntity)
+        .steps.map((s) => s.description);
+
+    // Add a step by typing into the field and pressing Enter.
+    const addInput = screen.getByLabelText('Add to Steps');
+    fireEvent.change(addInput, { target: { value: 'set price' } });
+    fireEvent.keyDown(addInput, { key: 'Enter' });
+    expect(steps(0)).toEqual(['pull drawings', 'check tolerances', 'set price']);
+
+    // Edit a step in place (commit on blur).
+    const item = screen.getByLabelText('Item: pull drawings');
+    fireEvent.change(item, { target: { value: 'pull the latest drawings' } });
+    fireEvent.blur(item);
+    expect(steps(1)[0]).toBe('pull the latest drawings');
+
+    // Remove a step.
+    fireEvent.click(screen.getByRole('button', { name: 'Remove item: check tolerances' }));
+    expect(steps(2)).toEqual(['pull drawings']); // renumbered by the pure function
   });
 
   it('scopes the add form to its own section', () => {

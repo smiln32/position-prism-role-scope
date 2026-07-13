@@ -18,8 +18,10 @@ import { newId } from './model';
  * these do not carry a "needs verification" marker.
  *
  * Every function is pure: it returns a new model and mutates nothing. Edits
- * bump updatedAt so nothing changes silently (rule 9). Nothing here deletes -
- * to retract, an owner edits the text or clears the verified flag.
+ * bump updatedAt so nothing changes silently (rule 9). No entity is ever
+ * deleted; the only removal is owner-directed, item-level correction of a
+ * list field the owner themselves populated (removeListItem) - an explicit,
+ * attributable edit, not a silent drop.
  */
 
 const NC = 'Not yet captured';
@@ -186,6 +188,101 @@ export function patchEntity(
     next.updatedAt = now;
   }
   return next;
+}
+
+/* ---- list-field edit ---------------------------------------------------- */
+
+/**
+ * The array fields an owner can edit item-by-item. `steps` holds ProcessStep
+ * objects ({order, description}); the rest are plain string[]. Both are edited
+ * as ordered plain strings and mapped back on write - steps get renumbered.
+ */
+export type ListField =
+  | 'steps' | 'dependencies' | 'failurePoints' | 'whoElseKnows'
+  | 'realCriteria' | 'thresholds' | 'quirks';
+
+const STRING_LIST_FIELDS = new Set<string>([
+  'dependencies', 'failurePoints', 'whoElseKnows', 'realCriteria', 'thresholds', 'quirks',
+]);
+const STEP_LIST_FIELD = 'steps';
+
+function isListField(field: string): field is ListField {
+  return field === STEP_LIST_FIELD || STRING_LIST_FIELDS.has(field);
+}
+
+/** Read a list field as plain strings (steps -> their descriptions). */
+function readList(rec: Record<string, unknown>, field: ListField): string[] {
+  const raw = rec[field];
+  if (!Array.isArray(raw)) return [];
+  if (field === STEP_LIST_FIELD) return (raw as { description: string }[]).map((x) => x.description);
+  return (raw as string[]).slice();
+}
+
+/** Write plain strings back into a list field (steps get renumbered 1..n). */
+function writeList(rec: Record<string, unknown>, field: ListField, values: string[]): void {
+  rec[field] = field === STEP_LIST_FIELD
+    ? values.map((description, i) => ({ order: i + 1, description }))
+    : values.slice();
+}
+
+/** The current items of an editable list field, as plain strings (for the UI). */
+export function listFieldValues(entity: AnyEntity, field: string): string[] {
+  if (!isListField(field)) return [];
+  return readList(entity as unknown as Record<string, unknown>, field);
+}
+
+/**
+ * Apply an owner-directed transform to an entity's list field. Items are
+ * trimmed and blanks dropped; a no-op transform returns the input model
+ * unchanged. Any real change bumps updatedAt so it is attributable (rule 9) -
+ * item removal is the owner correcting their own record, never a silent drop.
+ */
+function commitList(
+  model: KnowledgeModel, id: string, field: string,
+  transform: (items: string[]) => string[],
+): KnowledgeModel {
+  if (!isListField(field)) throw new Error(`Not an editable list field: ${field}`);
+  const next: KnowledgeModel = JSON.parse(JSON.stringify(model));
+  const hit = findEntity(next, id);
+  if (!hit) throw new Error(`No such entity: ${id}`);
+  const rec = hit.entity as unknown as Record<string, unknown>;
+  if (!Array.isArray(rec[field]))
+    throw new Error(`Entity ${id} has no list field "${field}".`);
+  const before = readList(rec, field);
+  const after = transform(before).map((x) => x.trim()).filter(Boolean);
+  if (JSON.stringify(after) === JSON.stringify(before)) return model; // unchanged
+  writeList(rec, field, after);
+  const now = new Date().toISOString();
+  hit.entity.updatedAt = now;
+  next.updatedAt = now;
+  return next;
+}
+
+/** Append an item to a list field. Blank input is ignored. */
+export function addListItem(model: KnowledgeModel, id: string, field: string, text: string): KnowledgeModel {
+  if (!text.trim()) return model;
+  return commitList(model, id, field, (items) => [...items, text]);
+}
+
+/** Replace the item at `index`. A blank edit is ignored - use removeListItem to remove. */
+export function editListItem(model: KnowledgeModel, id: string, field: string, index: number, text: string): KnowledgeModel {
+  if (!text.trim()) return model;
+  return commitList(model, id, field, (items) => {
+    if (index < 0 || index >= items.length) return items;
+    const copy = items.slice();
+    copy[index] = text;
+    return copy;
+  });
+}
+
+/** Owner-directed removal of the item at `index` (attributable; steps renumber). */
+export function removeListItem(model: KnowledgeModel, id: string, field: string, index: number): KnowledgeModel {
+  return commitList(model, id, field, (items) => {
+    if (index < 0 || index >= items.length) return items;
+    const copy = items.slice();
+    copy.splice(index, 1);
+    return copy;
+  });
 }
 
 /** Owner confirms (or un-confirms) an item. Attributable; nothing else moves. */

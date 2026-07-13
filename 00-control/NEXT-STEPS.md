@@ -1,6 +1,6 @@
 # NEXT STEPS — where to pick up
 
-_Last updated: 2026-07-12. This is the short, current "where do I start" note.
+_Last updated: 2026-07-13. This is the short, current "where do I start" note.
 For the fuller roadmap and architecture, read `EXPANSION-HANDOFF.md` (§4 map,
 §5 non-negotiables, §6 full roadmap A–H). Read `CLAUDE.md` before writing code._
 
@@ -16,8 +16,14 @@ two expansion PRs have **merged to master** and one is **still open as a draft**
 | #1 | `maintenance/merge-report-timestamp-fix` | **Merged** ✅ | Merge report counts content changes only, not timestamp bumps |
 | #2 | `feature/structured-knowledge-capture` | **Merged** ✅ | Direct structured capture + owner-facing Knowledge screen + jsdom component tests. Brought dev-deps `jsdom` + `@testing-library/*` to master. A small doc-file conflict (DECISIONS/STATE) was resolved by keeping both sides. |
 | #3 | `feature/llm-interview-adapter` | **Open — DRAFT** ⏸️ | Optional Anthropic (Haiku) interview adapter. Engine logic unit-tested; **the live network + async UI path is NOT browser-verified.** Do not merge until it is (see item 3B below). |
+| #4 | `feature/data-at-rest-encryption` | **Open — PR** 🔐 | Passphrase protection for localStorage (item 3B). Behind the StorageLike seam; frozen schema untouched; passphrase memory-only. 90 tests on that branch. |
+| #5 | `feature/list-field-editing` | **Open — PR** ✅ | Finish structured capture (item 3C): array fields editable item-by-item (add/edit/remove, steps renumber), not add-only. 82 tests on that branch. |
 
 **Merged code is green:** 74 tests pass, clean build, clean lint.
+
+> Note: PRs #4 and #5 both branch off master and each edits the control docs
+> (DECISIONS/STATE/NEXT-STEPS); expect a small doc reconciliation when the
+> second one merges, as with #2. Their code touches disjoint files.
 
 `master` now contains everything except the LLM adapter. Nothing is on fire.
 
@@ -82,14 +88,14 @@ Proposed, self-contained fix:
   and the App shell. Frozen schema untouched.
 - This is the highest-value hardening item for a product holding private info.
 
-### C. Finish structured capture (roadmap item B)
-On the (now merged) capture code, list-fields — a process's `steps`, a
-decision's `criteria` — are **add-only**. `patchEntity` handles string/boolean
-fields but not array editing/removal.
-- Add inline editing + removal for array fields in `KnowledgeScreen.tsx` and
-  extend `capture.ts` accordingly (never delete silently — same attributable
-  edit semantics, bump `updatedAt`).
-- Cover it with the jsdom component-test harness that PR #2 introduced.
+### C. Finish structured capture (roadmap item B) — ✅ DONE in PR #5 (`feature/list-field-editing`)
+Built 2026-07-13; see `DECISIONS.md` 2026-07-13. List-fields (a process's
+`steps`, a decision's `criteria`, thresholds, "who else knows", …) are now
+editable item-by-item in `KnowledgeScreen.tsx` via `addListItem` /
+`editListItem` / `removeListItem` in `capture.ts` — attributable (bump
+`updatedAt`), steps renumber 1..n, removal is owner-directed item correction
+(the only removal, never a silent drop). Covered by capture unit tests + a
+jsdom component test. Remaining before merge: review.
 
 ### D. Wire LLM question generation into the UI (roadmap item C)
 `LlmInterviewEngine.nextQuestion` already rewords the rule-chosen question, but
