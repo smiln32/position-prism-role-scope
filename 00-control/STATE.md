@@ -86,6 +86,11 @@ new logged decisions.
   * Reconciliation on merge: the vault now also encrypts #6's backup keys
     (isManagedKey = project OR backup prefix), so backups are sealed at rest
     and recoverable. Frozen schema untouched throughout.
+- PROPOSED (branch perf/code-split-screens, PR open): route-level code
+  splitting. The six navigation-only screens are React.lazy() behind one
+  Suspense boundary in App.tsx; initial JS 87.2KB -> 69.0KB gzip (~21%), demo
+  fixture out of the production initial bundle. No behavior change; 106 tests
+  pass. See DECISIONS.md 2026-07-13 (perf/code-split-screens).
 - MERGED to master (PR #1, maintenance/merge-report-timestamp-fix): merge.ts
   excludes 'updatedAt' from the content-change loop so a pure timestamp bump
   reports 'unchanged' not 'updated'; +1 regression test. Report-labeling only;

@@ -1,10 +1,15 @@
-import { useMemo, useState } from 'react';
-import ModelInspector from './ModelInspector';
-import InterviewScreen from './interview/InterviewScreen';
-import DocumentsScreen from './analysis/DocumentsScreen';
-import DeliverablesScreen from './deliverables/DeliverablesScreen';
-import DashboardScreen from './dashboard/DashboardScreen';
-import KnowledgeScreen from './knowledge-model/KnowledgeScreen';
+import { lazy, Suspense, useMemo, useState } from 'react';
+// The Home / New / Project shell is all a first-time visitor needs. The
+// heavier task screens - and their navigation-only dependencies (the 8-track
+// interview engine, the nine deliverable renderers, document extraction,
+// dashboard metrics, and the demo fixture) - are code-split so they never
+// weigh down the initial load. Each resolves the first time its screen opens.
+const ModelInspector = lazy(() => import('./ModelInspector'));
+const InterviewScreen = lazy(() => import('./interview/InterviewScreen'));
+const DocumentsScreen = lazy(() => import('./analysis/DocumentsScreen'));
+const DeliverablesScreen = lazy(() => import('./deliverables/DeliverablesScreen'));
+const DashboardScreen = lazy(() => import('./dashboard/DashboardScreen'));
+const KnowledgeScreen = lazy(() => import('./knowledge-model/KnowledgeScreen'));
 import { createEmptyModel, newId } from './knowledge-model/model';
 import {
   ProjectStore,
@@ -96,43 +101,45 @@ function MainApp({ storage, security }: { storage: StorageLike; security: Securi
 
   return (
     <main>
-      {screen.name === 'home' && (
-        <HomeScreen key={refresh} store={store} go={setScreen} security={security} />
-      )}
-      {screen.name === 'new-project' && (
-        <NewProjectScreen store={store} go={setScreen} />
-      )}
-      {screen.name === 'project' && (
-        <ProjectScreen key={`${screen.projectId}-${refresh}`} store={store}
-          projectId={screen.projectId} go={setScreen} changed={bump} />
-      )}
-      {screen.name === 'interview' && (
-        <InterviewRoute key={`${screen.projectId}-${screen.sessionId}`} store={store}
-          projectId={screen.projectId} sessionId={screen.sessionId}
-          go={setScreen} changed={bump} />
-      )}
-      {screen.name === 'documents' && (
-        <DocumentsRoute key={`docs-${screen.projectId}-${refresh}`} store={store}
-          projectId={screen.projectId} go={setScreen} changed={bump} />
-      )}
-      {screen.name === 'knowledge' && (
-        <KnowledgeRoute key={`know-${screen.projectId}-${refresh}`} store={store}
-          projectId={screen.projectId} go={setScreen} changed={bump} />
-      )}
-      {screen.name === 'deliverables' && (
-        <DeliverablesRoute key={`del-${screen.projectId}`} store={store}
-          projectId={screen.projectId} go={setScreen} changed={bump} />
-      )}
-      {screen.name === 'dashboard' && (
-        <DashboardRoute key={`dash-${screen.projectId}-${refresh}`} store={store}
-          projectId={screen.projectId} go={setScreen} changed={bump} />
-      )}
-      {screen.name === 'inspector' && (
-        <section>
-          <button className="quiet" onClick={() => setScreen({ name: 'home' })}>← Back</button>
-          <ModelInspector />
-        </section>
-      )}
+      <Suspense fallback={<p className="muted" style={{ padding: '1rem 0' }}>Opening…</p>}>
+        {screen.name === 'home' && (
+          <HomeScreen key={refresh} store={store} go={setScreen} security={security} />
+        )}
+        {screen.name === 'new-project' && (
+          <NewProjectScreen store={store} go={setScreen} />
+        )}
+        {screen.name === 'project' && (
+          <ProjectScreen key={`${screen.projectId}-${refresh}`} store={store}
+            projectId={screen.projectId} go={setScreen} changed={bump} />
+        )}
+        {screen.name === 'interview' && (
+          <InterviewRoute key={`${screen.projectId}-${screen.sessionId}`} store={store}
+            projectId={screen.projectId} sessionId={screen.sessionId}
+            go={setScreen} changed={bump} />
+        )}
+        {screen.name === 'documents' && (
+          <DocumentsRoute key={`docs-${screen.projectId}-${refresh}`} store={store}
+            projectId={screen.projectId} go={setScreen} changed={bump} />
+        )}
+        {screen.name === 'knowledge' && (
+          <KnowledgeRoute key={`know-${screen.projectId}-${refresh}`} store={store}
+            projectId={screen.projectId} go={setScreen} changed={bump} />
+        )}
+        {screen.name === 'deliverables' && (
+          <DeliverablesRoute key={`del-${screen.projectId}`} store={store}
+            projectId={screen.projectId} go={setScreen} changed={bump} />
+        )}
+        {screen.name === 'dashboard' && (
+          <DashboardRoute key={`dash-${screen.projectId}-${refresh}`} store={store}
+            projectId={screen.projectId} go={setScreen} changed={bump} />
+        )}
+        {screen.name === 'inspector' && (
+          <section>
+            <button className="quiet" onClick={() => setScreen({ name: 'home' })}>← Back</button>
+            <ModelInspector />
+          </section>
+        )}
+      </Suspense>
       <Disclaimer />
     </main>
   );
