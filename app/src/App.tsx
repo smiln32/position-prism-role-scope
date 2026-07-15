@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 // The Home / New / Project shell is all a first-time visitor needs. The
 // heavier task screens - and their navigation-only dependencies (the 8-track
 // interview engine, the nine deliverable renderers, document extraction,
@@ -98,6 +98,14 @@ function MainApp({ storage, security }: { storage: StorageLike; security: Securi
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
   const [refresh, setRefresh] = useState(0);
   const bump = () => setRefresh((n) => n + 1);
+
+  // Every screen swap starts a fresh page, so send the reader back to the top.
+  // Without this the browser keeps the prior scroll position and the new screen
+  // (often shorter) opens part-way down. Keyed on `screen`, not `refresh`, so an
+  // in-place save/refresh leaves the reader where they are.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screen]);
 
   return (
     <main>

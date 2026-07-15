@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { renderPackage, DISCLAIMER, type Rendered } from './render';
 import { exportModel } from '../knowledge-model/model';
 import type { ProjectFile } from '../project/store';
@@ -21,6 +21,13 @@ export default function DeliverablesScreen({
 }) {
   const [docs, setDocs] = useState<Rendered[] | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // Opening a document to read it, or returning to the list, is a full view
+  // change within this screen - start it at the top rather than wherever the
+  // reader had scrolled the previous view.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [openId]);
 
   const generate = () => {
     const { rendered, versions } = renderPackage(project);
