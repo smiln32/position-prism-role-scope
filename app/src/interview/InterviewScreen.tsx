@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RuleBasedEngine, TRACKS, trackById } from './engine';
 import type { ProjectFile, SessionMeta } from '../project/store';
 
@@ -18,6 +18,13 @@ export default function InterviewScreen({
   const [nudge, setNudge] = useState('');
 
   const memory = project.interviewMemory ?? engine.createMemory();
+
+  // Moving between the track picker and a track's questions is a full view
+  // change - open it at the top. Keyed on trackId only, so answering a question
+  // (which does not change trackId) leaves the reader on the feedback line.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [trackId]);
 
   if (!trackId) {
     return (

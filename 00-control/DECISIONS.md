@@ -449,3 +449,17 @@ to each screen.
   already fast (local-first, no network/images/web-fonts) - this is a real
   payload/parse win and future-proofing as more screens land, not a fix for a
   perceived slowness. Frozen schema untouched; no dependency changes. | Proposed.
+
+2026-07-14 | UX fix (Claude Code, branch fix/scroll-to-top-on-navigation) |
+Scroll-to-top on view change. The app is a single-page screen switch; the
+browser preserved the prior scroll position across every screen swap, so a new
+(often shorter) view opened part-way down - reported when "Start a new project"
+opened mid-page. One class of bug in three places, all fixed the same way
+(window.scrollTo(0,0) in a useEffect keyed on the value that identifies the
+view): App.tsx (keyed on `screen`, covers all top-level navigation),
+DeliverablesScreen (keyed on `openId`, the list <-> read-a-document swap), and
+InterviewScreen (keyed on `trackId`, the picker <-> questions swap). Deliberately
+NOT applied where a scroll would harm: keyed on the view identifier only, so
+answering an interview question (no trackId change) keeps the reader on the
+feedback line, and the Knowledge "+ Add" form expands in place. No logic or
+schema change; behavior-only. Verified: 106 tests pass, clean build + lint. | Merged.
