@@ -1,8 +1,18 @@
 # NEXT STEPS — where to pick up
 
-_Last updated: 2026-07-13. This is the short, current "where do I start" note.
+_Last updated: 2026-07-16. This is the short, current "where do I start" note.
 For the fuller roadmap and architecture, read `EXPANSION-HANDOFF.md` (§4 map,
-§5 non-negotiables, §6 full roadmap A–H). Read `CLAUDE.md` before writing code._
+§5 non-negotiables, §6 full roadmap A–H). Read `CLAUDE.md` (repo root) before
+writing code._
+
+> **Since 2026-07-13, below:** PRs #7/#9/#10 merged 2026-07-15 (route-level code
+> splitting 87.2→69.0 KB gzip; scroll-to-top on navigation; top-level README +
+> `.env` gitignore). `PATH-TO-SHIP.md` now tracks the prototype→product gap and
+> **three owner decisions gate it** (hosted site vs. desktop app; free vs. paid;
+> adapter #3 in or out of v1) — read it before picking a roadmap item, since the
+> distribution choice drives most of the remaining work. Docs/workspace pass
+> 2026-07-16 moved `CLAUDE.md` to root and added `CONTEXT.md`. The section-3
+> priorities below still stand.
 
 ---
 
@@ -127,9 +137,11 @@ open.
 
 ## 4. Map of the important files
 
-- `00-control/` — `CLAUDE.md` (rules), `MASTER-SPEC.md`, `STATE.md` (live
-  inventory), `DECISIONS.md` (append-only log), `EXPANSION-HANDOFF.md` (full
-  roadmap), this file.
+- **Repo root** — `CLAUDE.md` (rules; moved here 2026-07-16, lives at root and
+  nowhere else), `CONTEXT.md` (task routing / stage map), `README.md`.
+- `00-control/` — `MASTER-SPEC.md`, `STATE.md` (live inventory), `DECISIONS.md`
+  (append-only log), `EXPANSION-HANDOFF.md` (full roadmap), `PATH-TO-SHIP.md`
+  (prototype → product), handoffs, this file.
 - `app/src/knowledge-model/` — `schema.ts` (**frozen v1.0.0**, 10 entity types),
   `model.ts` (validate/export/import), `merge.ts`, `capture.ts` (direct entry).
 - `app/src/interview/` — `engine.ts` (rule-based, 8 tracks/50 areas),

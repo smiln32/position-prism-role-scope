@@ -586,3 +586,21 @@ Stage 4 line was wrong and has been fixed with a note. CONTEXT.md had inherited
 the wrong 44 from STATE.md and is corrected too. metrics.ts never hardcoded
 either number - it computes totalAreas by summing perTrack, which is why no test
 caught the drift. | Corrected.
+
+2026-07-16 | EXPANSION-HANDOFF refresh (Claude Code) | The roadmap document was
+written 2026-07-11 and had gone stale enough to be actively harmful: it listed
+master at 56 tests (106), showed PRs #1/#2 as pending review when both had
+merged, omitted #4/#7/#9/#10/#11 entirely, and its roadmap told a future session
+to fix newId's collision-prone 8-char suffix and add quota handling/backups -
+all shipped in PR #6 on 2026-07-13. A session following it would have redone
+finished work. Refreshed against verified state: PR table rebuilt from git
+history, done items marked DONE rather than deleted (so a later reader sees they
+were considered and closed, not dropped), local path corrected (repo moved under
+Downloads/apps/), CLAUDE.md/CONTEXT.md root locations reflected, roadmap item I
+(richer inputs, local-first) added from the 2026-07-15 decision, and a pointer to
+PATH-TO-SHIP.md added at the top since shipping now gates sensibly picking any
+roadmap item. Preserved verbatim: section 5 non-negotiables (still exactly
+right) and the section 4 architecture map (still accurate; its "8 tracks / 50
+areas" was correct where STATE.md was wrong). Also fixed NEXT-STEPS.md:130,
+which still listed CLAUDE.md under 00-control/ - a list-phrased reference the
+earlier path-based grep missed. | Done.
