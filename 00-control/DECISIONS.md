@@ -576,3 +576,13 @@ still (PR #4, 2026-07-13). (b) 08-docs was labelled "Stage 8". It spans Stage 2
 DISCLAIMER.md), and post-build 2026-07-13 (SECURITY.md, PR #4). Both rows now
 cite their sources inline, and the numbering caveat points readers at
 MASTER-SPEC.md:143-186 rather than the folder prefix. | Corrected.
+
+2026-07-16 | Area count corrected: 44 -> 50 (Claude Code) | STATE.md contradicted
+itself: the Stage 4 entry said "44 areas total" while the Stage 7 entry said
+"completeness of 50 areas". EXPANSION-HANDOFF.md said "8 tracks / 50 areas".
+Counted from the source (TRACKS in app/src/interview/engine.ts, area entries
+inside the areas[] blocks): 50 areas across 8 tracks. 50 is correct; STATE.md's
+Stage 4 line was wrong and has been fixed with a note. CONTEXT.md had inherited
+the wrong 44 from STATE.md and is corrected too. metrics.ts never hardcoded
+either number - it computes totalAreas by summing perTrack, which is why no test
+caught the drift. | Corrected.

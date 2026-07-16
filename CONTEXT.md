@@ -37,7 +37,7 @@ not inferred from the folder number.
 |---|---|---|---|
 | [`00-control/`](00-control/) | Governance: spec, decisions, state, handoffs | — | Stage 0, maintained throughout |
 | [`01-schema/`](01-schema/) | Knowledge model contract v1.0.0 (**FROZEN**) + fixtures | `app/src/knowledge-model/` | Stage 1 |
-| [`02-interview/`](02-interview/) | Interview engine: 8 tracks, 44 areas, adaptive logic | `app/src/interview/` | Stage 3 (Track 1) → Stage 4 (all eight) |
+| [`02-interview/`](02-interview/) | Interview engine: 8 tracks, **50 areas**, adaptive logic | `app/src/interview/` | Stage 3 (Track 1) → Stage 4 (all eight) |
 | [`03-analysis/`](03-analysis/) | Document extraction, conflict detection, resolution | `app/src/analysis/` | Stage 5 |
 | [`04-model-views/`](04-model-views/) | Dashboard, risk scoring formula, gap views | `app/src/dashboard/` | Stage 7 |
 | [`05-deliverables/`](05-deliverables/) | The nine renderers + zero-invention audit | `app/src/deliverables/` | Stage 6 |
