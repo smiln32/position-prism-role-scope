@@ -122,7 +122,9 @@ Every deliverable: professionally formatted, plain-language, versioned, exportab
 
 ## WORKSPACE (create in Stage 0)
 
-00-control/        CLAUDE.md, STATE.md, DECISIONS.md, this spec
+CLAUDE.md          operating rules — ROOT ONLY (moved 2026-07-16, see DECISIONS.md)
+CONTEXT.md         task routing / stage map — ROOT
+00-control/        STATE.md, DECISIONS.md, this spec, handoffs
 01-schema/         knowledge model contract + fixtures
 02-interview/      track definitions, prompts, adaptive logic
 03-analysis/       document extraction

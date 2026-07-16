@@ -1,11 +1,26 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
 Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; PRs #7/#9/#10 merged
 2026-07-15 (perf code-split, scroll-to-top UX fix, README + .env gitignore).
 The LLM adapter (#3) remains the only open feature branch (draft); the prior
 handoff PR #8 is stale (see HANDOFF-2026-07-15.md).
+
+2026-07-16 (docs/workspace session, uncommitted at time of writing):
+- CLAUDE.md now lives at the REPO ROOT and nowhere else (owner directive).
+  MASTER-SPEC.md's workspace table amended to match; logged in DECISIONS.md.
+- New root CONTEXT.md - task routing / stage map, pairing each numbered folder
+  with its app/src source. Read it after CLAUDE.md.
+- 06-export/ documented at last (README.md); it was the only empty workspace
+  folder since Stage 0. Documentation gap, never a missing feature.
+- New root ICM-AUDIT-LOG.md - conformance audit vs the Interpretable Context
+  Methodology: 9/24. Conversion to a stages/ tree DECLINED pending an owner
+  decision on which ICM is the target (see DECISIONS.md 2026-07-16).
+- Owner's untracked root docs: the duplicate "Business Knowledge Succession
+  Platform.txt" and "Succession-description.txt" were deleted at owner request;
+  the .md (superset) remains.
+- Docs only. No app/ source touched. 106 tests still pass, 14 files.
 Next stage: none in the staged build. The path from prototype to shippable
 product is now tracked in PATH-TO-SHIP.md (three owner decisions + Tiers 1-4).
 Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
@@ -122,7 +137,8 @@ Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 
-1. Read 00-control/HANDOFF.md, CLAUDE.md, STATE.md, DECISIONS.md, MASTER-SPEC.md.
+1. Read CLAUDE.md and CONTEXT.md (repo root), then 00-control/HANDOFF.md,
+   STATE.md, DECISIONS.md, MASTER-SPEC.md.
 3. cd app && npm install && npm run build && npm test - all must pass clean.
 4. Proceed with the stage listed as "Next stage" above.
 

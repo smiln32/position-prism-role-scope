@@ -497,3 +497,82 @@ Role DNA schema sharing, cloud sync). Highest pre-ship risk: data durability
 (knowledge currently lives in browser localStorage). Session handoff written to
 00-control/HANDOFF-2026-07-15.md; STATE.md updated. | Proposed (owner decisions
 pending).
+
+2026-07-16 | Workspace structure (Claude Code) | SPEC AMENDMENT. CLAUDE.md moves
+from 00-control/ to the repo ROOT and lives there and nowhere else; a new root
+CONTEXT.md carries the stage map / task routing. MASTER-SPEC.md's workspace
+table (line 125) is amended to match: CLAUDE.md and CONTEXT.md at root,
+00-control/ keeps STATE.md, DECISIONS.md, the spec, and the handoffs. Rationale:
+owner directive 2026-07-16, and root is where a fresh agent session actually
+looks for operating rules - a nested CLAUDE.md is not reliably loaded, so the
+non-negotiables (never fabricate, no stored credentials, frozen schema) were one
+directory further away than the rules that matter most should ever be. Deviating
+from the spec silently is forbidden by CLAUDE.md rule 5, hence this entry. Moved
+with git mv (history preserved as a rename); all path-bearing references updated
+(STATE.md resume path, HANDOFF.md, HANDOFF-2026-07-15.md, app/README.md,
+CONTEXT.md). Bare "read CLAUDE.md" mentions were left alone - still true.
+| Done (owner-directed).
+
+2026-07-16 | 06-export documentation (Claude Code) | Wrote 06-export/README.md.
+The folder was specified at MASTER-SPEC.md:131 in Stage 0 and had sat EMPTY ever
+since - the only unpopulated workspace folder. The functionality was never
+missing: it shipped across Stages 2/4/6 and is documented now, not built. Three
+distinct exports, previously undocumented and easy to confuse: (1) project
+export/import, lossless round-trip, ProjectStore.exportJson/importJson
+(store.ts:202/206), validate-before-accept, migrate-on-load; (2) sealed export,
+EncryptedStorage.exportSealed (vault.ts:224), AES-GCM under the owner's
+passphrase, passphrase never exported so a sealed file without it is
+unrecoverable by design; (3) AI-ready knowledge export, the ninth deliverable
+(render.ts:268/288), renders via exportModel through Doc.c() so auditRendered()
+still proves zero invention. Noted: mergeModels() remains unwired - import
+replaces, never merges. | Done.
+
+2026-07-16 | ICM conformance (Claude Code) | Audited the workspace against the
+Interpretable Context Methodology (Van Clief & McDermott, arXiv:2603.16021) and
+logged ICM-AUDIT-LOG.md at root: 6/24, "weak". Decision: do NOT convert to the
+paper's stages/NN_name/{CONTEXT.md,references/,output/} tree. Rationale: this is
+an application repo whose numbered folders are documentation domains describing
+app/src/, not stages an agent flows through; it already conforms exactly to its
+own spec (MASTER-SPEC.md:123-133). Converting would rewrite cross-references
+across DECISIONS.md (referenced by 23 files), STATE.md, and the handoffs, and
+break the documented resume path, against a build that is complete and green at
+106 tests. Three competing structures exist and the target must be settled
+before any conversion: the paper's ICM, the master prompt's 18-folder
+ICM_WORKSPACE (00-control..17-commercialization, never built - see the owner's
+own critique), and what was actually built (9 folders). Cheap non-breaking wins
+taken instead: root CONTEXT.md (ICM-05), CLAUDE.md to root (ICM-06),
+06-export documented (ICM-09). | Audited; conversion declined pending owner
+decision on which ICM is the target.
+
+2026-07-16 | Correction to 06-export docs (Claude Code) | The first draft of
+06-export/README.md described exportSealed's PURPOSE from its signature and from
+STATE.md prose rather than from the source, and got it wrong: it claimed the
+function was for "handing a project to someone who should hold the file but not
+the contents." The docstring (vault.ts:218-223) says the opposite job - it lets a
+locked-out owner preserve ciphertext before resetting so a reset never destroys
+data (integrity rule 9). Also corrected: exportSealed takes no projectId, it
+sweeps every managed key (projectKeys/isManagedKey, vault.ts:40-41,69-75) - all
+projects AND their backup slots - so it is a whole-vault dump, not a per-project
+export. Verified-and-kept: importJson validates before saving and throws, never
+partially applying (store.ts:206-219); PBKDF2/SHA-256 at KDF_ITERATIONS=250_000
+and AES-GCM 256-bit (crypto.ts:18-21). Rationale for logging a docs correction:
+the error was plausible-sounding invention presented with file:line citations -
+precisely what rules 6 and 7 forbid - and it survived a full session because it
+read as authoritative. Noted for future sessions: grep gives signatures, not
+behaviour; read the body before documenting what a function is FOR. | Corrected.
+
+2026-07-16 | Stage map corrections (Claude Code) | Second correction pass on the
+same root cause as the exportSealed error: CONTEXT.md's first draft inferred its
+"built in" column from folder numbers and README headers rather than from the
+spec's staged build plan, and two rows were wrong. (a) 06-export was labelled
+"Stage 2". It spans three: model JSON export/import came with the frozen contract
+in Stage 1 (MASTER-SPEC.md:149-150), project save/load/resume/export in Stage 2
+(:154-155), and the AI-ready export renderer shipped as the ninth deliverable in
+Stage 6. Note spec-vs-built drift, recorded not smoothed: the spec assigned AI
+export to Stage 7 (:178-180); as built it landed in Stage 6, with Stage 7
+contributing export-validates-against-schema evidence. Sealed export came later
+still (PR #4, 2026-07-13). (b) 08-docs was labelled "Stage 8". It spans Stage 2
+(VISUAL-SYSTEM.md, per its own line 1 and spec :154), Stage 8 (HELP.md,
+DISCLAIMER.md), and post-build 2026-07-13 (SECURITY.md, PR #4). Both rows now
+cite their sources inline, and the numbering caveat points readers at
+MASTER-SPEC.md:143-186 rather than the folder prefix. | Corrected.
