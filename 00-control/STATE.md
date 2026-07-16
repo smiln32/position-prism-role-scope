@@ -1,12 +1,14 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-13
+Last updated: 2026-07-15
 Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
-Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; the LLM adapter (#3) is the
-only open branch (see EXPANSION-HANDOFF.md / NEXT-STEPS.md).
-Next stage: none. The staged build plan is complete. Future work (API
-adapter, Role DNA schema sharing, cloud sync) proceeds via HANDOFF.md and
-new logged decisions.
+Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; PRs #7/#9/#10 merged
+2026-07-15 (perf code-split, scroll-to-top UX fix, README + .env gitignore).
+The LLM adapter (#3) remains the only open feature branch (draft); the prior
+handoff PR #8 is stale (see HANDOFF-2026-07-15.md).
+Next stage: none in the staged build. The path from prototype to shippable
+product is now tracked in PATH-TO-SHIP.md (three owner decisions + Tiers 1-4).
+Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
 
 ## What exists right now
 

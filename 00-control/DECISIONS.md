@@ -463,3 +463,37 @@ NOT applied where a scroll would harm: keyed on the view identifier only, so
 answering an interview question (no trackId change) keeps the reader on the
 feedback line, and the Knowledge "+ Add" form expands in place. No logic or
 schema change; behavior-only. Verified: 106 tests pass, clean build + lint. | Merged.
+
+2026-07-15 | Docs / hygiene (Claude Code, branch docs/readme-and-env-gitignore,
+PR #10) | Added a top-level README.md (what Successor is, how it works, how a new
+person runs it), grounded in the spec and the shipped app. Frames inputs honestly:
+interviews + pasted/plain-text documents today, with PDFs/OCR/audio/video as a
+documented roadmap. Also hardened both .gitignore files to ignore .env / .env.*
+(keeping .env.example) - important because this is a browser-only app where a
+bundled key would not be secret, so no API key should ever be committed. No app
+code or schema change. Verified no .env was tracked (git check-ignore). | Merged.
+
+2026-07-15 | Roadmap direction (Claude Code) | Richer inputs are LOCAL-FIRST.
+Successor will accept more input types than typed answers and pasted text -
+planned: PDF text, in-browser OCR for scans/images, audio, then video - all
+folding into the same frozen knowledge model. Decision: build these local-first
+(in-browser), in that order. Cloud processing (higher accuracy/speed for audio,
+video, poor scans) is DEFERRED, not deleted: if ever added it must be strictly
+opt-in with the owner's own key, never stored, mirroring the optional AI adapter
+(#3) - never a quiet exfiltration of private business knowledge. Rationale: the
+product's core promise is "nothing leaves your computer"; PDF and OCR keep that
+promise with little compromise, and audio/video are where the local-vs-cloud
+fork is real. Nothing built yet (governance: never build ahead). See
+PATH-TO-SHIP.md Tier 4. | Deferred (direction set).
+
+2026-07-15 | Product / ship-readiness (Claude Code) | Captured the gap between
+the completed staged build (done, green) and a shippable product in a new
+00-control/PATH-TO-SHIP.md. Three owner decisions gate the work (distribution:
+hosted website vs. desktop app; free vs. paid v1; AI adapter #3 in or out of v1)
+followed by Tier 1 (distribution, data-durability hardening, real-browser
+testing), Tier 2 (WCAG AA audit, real PDF export, security review, onboarding),
+Tier 3 (privacy/terms, licensing/payment, update+support), Tier 4 (rich inputs,
+Role DNA schema sharing, cloud sync). Highest pre-ship risk: data durability
+(knowledge currently lives in browser localStorage). Session handoff written to
+00-control/HANDOFF-2026-07-15.md; STATE.md updated. | Proposed (owner decisions
+pending).
