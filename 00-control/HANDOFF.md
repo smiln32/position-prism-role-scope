@@ -12,7 +12,7 @@ Role DNA schema sharing, cloud sync, or maintenance.
    "Stages 0-8 complete (built in Claude chat)"
 3. Open the folder in VSCode and start Claude Code
 4. First instruction to Claude Code:
-   "Read 00-control/CLAUDE.md, STATE.md, DECISIONS.md, and MASTER-SPEC.md,
+   "Read CLAUDE.md (repo root), 00-control/STATE.md, DECISIONS.md, and MASTER-SPEC.md,
    verify the baseline, then propose the next piece of work as a logged
    decision before building."
 

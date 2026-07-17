@@ -22,6 +22,15 @@ export const DISCLAIMER =
 
 export const NOT_CAPTURED = 'Not yet captured.';
 
+/**
+ * An empty section can mean two very different things, and a report that says
+ * "Not yet captured" over work that was deliberately scoped out reads as
+ * unfinished work. When the interview never reached an area, say so; "Not yet
+ * captured" is reserved for parts that WERE asked and are still waiting on an
+ * answer worth recording (see DECISIONS.md 2026-07-16, P7).
+ */
+export const NOT_ASKED = 'This part of the interview has not been asked yet.';
+
 export interface Rendered {
   id: string;
   title: string;
@@ -74,9 +83,23 @@ function topicFacts(model: KnowledgeModel, trackId: string, areaId?: string): Fa
   return model.entities.facts.filter((f) => (f.topic ?? '').startsWith(prefix));
 }
 
-function quoteAll(doc: Doc, facts: FactEntity[]): void {
-  if (facts.length === 0) { doc.notCaptured(); return; }
-  for (const f of facts) doc.quote(f.statement, mark(f));
+function trackAnswered(project: ProjectFile, trackId: string): boolean {
+  return (project.interviewMemory?.trackProgress[trackId]?.answeredAreas.length ?? 0) > 0;
+}
+
+function areaAnswered(project: ProjectFile, trackId: string, areaId: string): boolean {
+  return project.interviewMemory?.trackProgress[trackId]?.answeredAreas.includes(areaId) ?? false;
+}
+
+/** Quote every fact for a track (or one area); when empty, say whether it was even asked. */
+function quoteArea(doc: Doc, project: ProjectFile, trackId: string, areaId?: string): void {
+  const facts = topicFacts(project.model, trackId, areaId);
+  if (facts.length > 0) {
+    for (const f of facts) doc.quote(f.statement, mark(f));
+    return;
+  }
+  const asked = areaId ? areaAnswered(project, trackId, areaId) : trackAnswered(project, trackId);
+  doc.p(asked ? NOT_CAPTURED : NOT_ASKED);
 }
 
 /* ------------------------------------------------------------------ */
@@ -115,12 +138,15 @@ function handbook(doc: Doc, project: ProjectFile): void {
   for (const t of TRACKS) {
     const facts = topicFacts(m, t.id);
     doc.h2(t.title);
-    if (facts.length === 0) { doc.notCaptured(); continue; }
+    if (facts.length === 0) {
+      doc.p(trackAnswered(project, t.id) ? NOT_CAPTURED : NOT_ASKED);
+      continue;
+    }
     for (const area of t.areas) {
       const areaFacts = topicFacts(m, t.id, area.id);
       if (areaFacts.length === 0) continue;
       doc.h3(area.question);
-      quoteAll(doc, areaFacts);
+      for (const f of areaFacts) doc.quote(f.statement, mark(f));
     }
   }
   const otherFacts = m.entities.facts.filter(
@@ -128,10 +154,26 @@ function handbook(doc: Doc, project: ProjectFile): void {
   doc.h2('Other knowledge on record');
   if (otherFacts.length === 0) doc.notCaptured();
   else for (const f of otherFacts) doc.quote(f.statement, `${f.topic ? ` — ${doc.c(f.topic)}` : ''}${mark(f)}`);
+  // Document lines render grouped and compact: a 500-line SOP as 500 separate
+  // blockquotes tripled the page count and buried the interview knowledge.
+  // Every line is still here verbatim, and full per-line attribution (document
+  // id + line number) remains on each fact and in the AI export.
   const docFacts = m.entities.facts.filter((f) => f.sources[0]?.kind === 'document');
   doc.h2('From the business\'s own documents');
   if (docFacts.length === 0) doc.notCaptured();
-  else for (const f of docFacts) doc.quote(f.statement, ` — ${doc.c(f.sources[0].detail ?? '')}${mark(f)}`);
+  else {
+    const byDoc = new Map<string, FactEntity[]>();
+    for (const f of docFacts) {
+      const key = f.sources[0].documentId ?? '';
+      const group = byDoc.get(key);
+      if (group) group.push(f); else byDoc.set(key, [f]);
+    }
+    for (const [docId, facts] of byDoc) {
+      doc.h3(project.documents?.find((d) => d.id === docId)?.name ?? 'Document');
+      for (const f of facts) doc.bullet(`${doc.c(f.statement)}${mark(f)}`);
+      doc.gap();
+    }
+  }
 }
 
 function relationshipMap(doc: Doc, project: ProjectFile): void {
@@ -171,27 +213,45 @@ function decisionPlaybook(doc: Doc, project: ProjectFile): void {
   if (j.length === 0) doc.notCaptured();
   for (const call of j) doc.quote(call.heuristic, `${call.context ? ` — ${doc.c(call.context)}` : ''}${mark(call)}`);
   doc.h2('In the owner\'s words on deciding');
-  quoteAll(doc, topicFacts(m, 'track-5'));
+  quoteArea(doc, project, 'track-5');
 }
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+/**
+ * Three month names are also ordinary English words ("we may need to", "a long
+ * march", "an august institution"). A plain case-insensitive substring match
+ * filed every "may" under May. Those three are matched case-SENSITIVELY -
+ * months are proper nouns and an owner writing about May capitalizes it - while
+ * the nine unambiguous names stay case-insensitive so a lowercase "january"
+ * still lands. Word boundaries keep "May" out of "Mayfair".
+ */
+const AMBIGUOUS_MONTHS = new Set(['March', 'May', 'August']);
+
+const monthMatcher = (month: string): RegExp =>
+  new RegExp(`\\b${month}\\b`, AMBIGUOUS_MONTHS.has(month) ? '' : 'i');
+
+export function factsMentioningMonth(facts: FactEntity[], month: string): FactEntity[] {
+  const re = monthMatcher(month);
+  return facts.filter((f) => re.test(f.statement));
+}
+
 function firstYear(doc: Doc, project: ProjectFile): void {
   const m = project.model;
   doc.h2('The annual rhythm in the owner\'s words');
-  quoteAll(doc, topicFacts(m, 'track-1', 'annual'));
+  quoteArea(doc, project, 'track-1', 'annual');
   doc.h2('Month by month');
   doc.p('Every statement on record that names a month, placed on the calendar. Months with nothing listed are not empty months - they are months nothing has been captured about yet.');
   for (const month of MONTH_NAMES) {
-    const hits = m.entities.facts.filter((f) => f.statement.toLowerCase().includes(month.toLowerCase()));
+    const hits = factsMentioningMonth(m.entities.facts, month);
     doc.h3(month);
     if (hits.length === 0) doc.p(NOT_CAPTURED);
     else for (const f of hits) doc.quote(f.statement, mark(f));
   }
   doc.h2('What to change slowly');
-  quoteAll(doc, topicFacts(m, 'track-8', 'change-slowly'));
+  quoteArea(doc, project, 'track-8', 'change-slowly');
   doc.h2('What should never change');
-  quoteAll(doc, topicFacts(m, 'track-8', 'never-change'));
+  quoteArea(doc, project, 'track-8', 'never-change');
 }
 
 function memoryArchive(doc: Doc, project: ProjectFile): void {
@@ -204,7 +264,7 @@ function memoryArchive(doc: Doc, project: ProjectFile): void {
     doc.p(`What was learned: ${doc.c(item.whatWasLearned)}`);
   }
   doc.h2('Scar tissue, in the owner\'s words');
-  quoteAll(doc, topicFacts(m, 'track-6'));
+  quoteArea(doc, project, 'track-6');
   doc.h2('Commitments and handshakes');
   const c = m.entities.commitments;
   if (c.length === 0) doc.notCaptured();
@@ -217,7 +277,7 @@ function memoryArchive(doc: Doc, project: ProjectFile): void {
 function emergencyBrief(doc: Doc, project: ProjectFile): void {
   const m = project.model;
   doc.h2('What breaks first');
-  quoteAll(doc, topicFacts(m, 'track-1', 'first-break'));
+  quoteArea(doc, project, 'track-1', 'first-break');
   doc.h2('Single points of failure on record');
   const spofs = m.entities.risks.filter((r) => r.riskKind.toLowerCase().includes('single'));
   if (spofs.length === 0) doc.notCaptured();
@@ -227,7 +287,7 @@ function emergencyBrief(doc: Doc, project: ProjectFile): void {
   }
   doc.gap();
   doc.h2('Who to call, in the owner\'s words');
-  quoteAll(doc, topicFacts(m, 'track-8', 'call-order'));
+  quoteArea(doc, project, 'track-8', 'call-order');
   doc.h2('Key relationships to contact');
   const rels = m.entities.relationships;
   if (rels.length === 0) doc.notCaptured();

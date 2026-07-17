@@ -106,3 +106,49 @@ describe('KnowledgeScreen (component)', () => {
     expect(within(form as HTMLElement).queryByLabelText('Who')).toBeNull();
   });
 });
+
+/**
+ * P1 (2026-07-16). The provenance fix is only real if the UI actually threads
+ * the choice through - a correct capture.ts wired to a default-only screen would
+ * still record every operator entry as the owner's own. See DECISIONS.md.
+ */
+describe('KnowledgeScreen: who is entering this', () => {
+  const openAndAddCommitment = (withWhom: string) => {
+    fireEvent.click(screen.getByRole('button', { name: '+ Add a commitment' }));
+    fireEvent.change(screen.getByLabelText('With whom'), { target: { value: withWhom } });
+    // The submit button inside the open Add form is labelled just "Add".
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+  };
+
+  it('defaults to the owner, and records owner provenance', () => {
+    let saved: ProjectFile | null = null;
+    render(<KnowledgeScreen project={projectWith()} onSave={(p) => { saved = p; }} onBack={() => {}} />);
+    // No jest-dom in this harness - assert the DOM property directly.
+    expect((screen.getByLabelText(/The owner, in their own words/) as HTMLInputElement).checked).toBe(true);
+    openAndAddCommitment('Henderson');
+    const c = saved!.model.entities.commitments[0];
+    expect(c.sources[0].detail).toBe('Entered directly by the owner');
+    expect(c.verified).toBe(true);
+  });
+
+  it('records operator provenance once the operator is selected', () => {
+    let saved: ProjectFile | null = null;
+    render(<KnowledgeScreen project={projectWith()} onSave={(p) => { saved = p; }} onBack={() => {}} />);
+    fireEvent.click(screen.getByLabelText(/Someone else, writing up what the owner said/));
+    fireEvent.change(screen.getByLabelText(/Your name/), { target: { value: 'J. Smith' } });
+    openAndAddCommitment('Henderson');
+    const c = saved!.model.entities.commitments[0];
+    expect(c.sources[0].kind).toBe('inferred');
+    expect(c.sources[0].detail).toContain('Structured by J. Smith');
+    expect(c.sources[0].detail).not.toContain('Entered directly by the owner');
+    expect(c.verified).toBe(false);
+    expect(c.confidence).toBe('medium');
+  });
+
+  it('warns the operator that their entries need the owner\'s confirmation', () => {
+    render(<KnowledgeScreen project={projectWith()} onSave={() => {}} onBack={() => {}} />);
+    expect(screen.queryByText(/your interpretation, not the owner/)).toBeNull();
+    fireEvent.click(screen.getByLabelText(/Someone else, writing up what the owner said/));
+    expect(screen.getByText(/your interpretation, not the owner/)).toBeTruthy();
+  });
+});

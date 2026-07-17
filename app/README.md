@@ -17,5 +17,6 @@ local-first (localStorage), no backend, no telemetry.
 - `src/deliverables/` - the nine-document succession package renderers
 - `src/dashboard/` - metrics, risk scoring, gap resolution
 
-The build's governing documents are in `../00-control/`. Read CLAUDE.md
+The operating rules are in `../CLAUDE.md` and the stage map in `../CONTEXT.md`
+(repo root); the rest of the governing documents are in `../00-control/`. Read CLAUDE.md
 before changing anything.

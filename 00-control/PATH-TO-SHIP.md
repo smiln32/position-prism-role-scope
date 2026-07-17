@@ -33,8 +33,10 @@ engineering ones.
    advisors* (exit planners, brokers, fractional COOs), so this matters.
 
 3. **Does the optional AI interview adapter (PR #3) ship in v1, or get cut?**
-   Built and unit-tested; the live path was never run against a real key. Either
-   verify-and-include, or shelve it for v1 to keep the release clean.
+   ~~Built and unit-tested; the live path was never run against a real key.~~
+   **DECIDED 2026-07-16: deferred.** PR #3 closed, branch archived; revive by
+   porting onto master (not merging) if pilot structuring labor demands it.
+   See DECISIONS.md 2026-07-16 and EXPANSION-HANDOFF §6A.
 
 ---
 

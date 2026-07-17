@@ -1,11 +1,71 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
 Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; PRs #7/#9/#10 merged
 2026-07-15 (perf code-split, scroll-to-top UX fix, README + .env gitignore).
 The LLM adapter (#3) remains the only open feature branch (draft); the prior
 handoff PR #8 is stale (see HANDOFF-2026-07-15.md).
+
+2026-07-16 (docs/workspace session, uncommitted at time of writing):
+- CLAUDE.md now lives at the REPO ROOT and nowhere else (owner directive).
+  MASTER-SPEC.md's workspace table amended to match; logged in DECISIONS.md.
+- New root CONTEXT.md - task routing / stage map, pairing each numbered folder
+  with its app/src source. Read it after CLAUDE.md.
+- 06-export/ documented at last (README.md); it was the only empty workspace
+  folder since Stage 0. Documentation gap, never a missing feature.
+- New root ICM-AUDIT-LOG.md - conformance audit vs the Interpretable Context
+  Methodology: 9/24. Conversion to a stages/ tree DECLINED pending an owner
+  decision on which ICM is the target (see DECISIONS.md 2026-07-16).
+- Owner's untracked root docs: the duplicate "Business Knowledge Succession
+  Platform.txt" and "Succession-description.txt" were deleted at owner request;
+  the .md (superset) remains.
+- Docs only. No app/ source touched. 106 tests still pass, 14 files.
+
+2026-07-16 (defect-fix session, branch fix/provenance-and-extraction-defects):
+Three defects found by reading the source end to end against the owner's
+decision to run Successor as a SERVICE (he interviews, he delivers reports, the
+company keeps its data). Test suite 106 -> 124. Frozen schema untouched.
+- P1 PROVENANCE (the important one): capture.ts claimed "Entered directly by the
+  owner" + verified=true for everything it created. In a service engagement the
+  OPERATOR types the structure, so that was a false attribution in the field the
+  product rests on. capture.ts now takes an Attribution ({enteredBy}), defaulting
+  to OWNER so nothing existing changed; 'operator' entries are 'inferred' /
+  medium / UNVERIFIED and name who structured them and from which fact.
+  KnowledgeScreen has a "Who is entering this?" control. This makes the existing
+  setVerified() promotion path meaningful for the first time.
+- P3 THE MAY BUG: the First Year calendar filed every "we may need to..." under
+  May (case-insensitive substring on month names). Now word-boundary, and
+  case-sensitive for March/May/August.
+- P4 NAME-GAP NOISE: a 4-line vendor list raised 11 gaps ("Who or what is
+  Machine?"). Now: business/owner names are known, consecutive capitals group
+  into one name, ALL-CAPS labels are ignored, and gaps are capped at 25/document
+  with the overflow reported. Same fixture: 11 -> 3 gaps.
+Same session, second pass ("clean the rest up", owner-delegated judgment).
+Suite 124 -> 131. Frozen schema and scoring formula untouched.
+- P5: Track 7 answers now become owner-declared RiskEntities (verbatim, source
+  'interview', high, unverified; riskKind per area; dismissals excluded).
+  Before: the risk track produced zero risks and every risk scored 95.
+- P6: handbook renders document lines grouped per document as bullets, not one
+  blockquote per line. Capture and AI export unchanged.
+- P7: renderers distinguish NOT_ASKED ("This part of the interview has not
+  been asked yet.") from NOT_CAPTURED via interviewMemory. Engine completion
+  semantics deliberately untouched (that's the engagement-type knob, deferred
+  with P2-A pending the pilot).
+- P2: resolved for the pilot by P1's operator attribution (post-hoc
+  structuring, honestly attributed). In-interview structured capture (P2-A)
+  and the LLM adapter (P2-B) deferred pending pilot evidence, per the accepted
+  recommendation.
+- Living-doc staleness fixed: README's phantom "existing" AI adapter (draft
+  PR #3, not on master - now says so), coverage "/8", embedded test counts
+  (replaced with pointers, not fresh numbers), HELP.md's missing passphrase +
+  file-type notes, build-review.md's unmarked stale "VERIFIED" claims (dated
+  banner added).
+Same session, third pass: PRs #3 and #8 CLOSED on GitHub (owner-directed
+archive; both branches retained on origin - #3 is deferred-not-rejected, see
+DECISIONS.md 2026-07-16 for the port-don't-merge revival note).
+Still open, needs the owner: the org rollup (multi-model renderer - new
+feature), P2-A/engagement types, real PDF export, pushing the branches.
 Next stage: none in the staged build. The path from prototype to shippable
 product is now tracked in PATH-TO-SHIP.md (three owner decisions + Tiers 1-4).
 Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
@@ -33,7 +93,9 @@ Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
 - 02-interview/README.md - track definition + adaptive behavior doc
 - 07-testing/stage3-acceptance.md - transcript + model diff evidence with
   zero-fabrication audit, generated by the real engine
-- STAGE 4: engine generalized to all 8 tracks (44 areas total, questions in
+- STAGE 4: engine generalized to all 8 tracks (50 areas total - corrected
+  2026-07-16, counted from TRACKS in engine.ts; this line said 44 and
+  contradicted the "50 areas" in the Stage 7 entry below, questions in
   TRACKS in engine.ts); ProjectInterviewMemory on the project file carries
   coverage, pending threads, known names across sessions; threads asked
   first in later sessions, cross-track threads surface labeled; revisit
@@ -122,7 +184,8 @@ Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
 
 ## How to resume a session (Claude Code, from Stage 4 on)
 
-1. Read 00-control/HANDOFF.md, CLAUDE.md, STATE.md, DECISIONS.md, MASTER-SPEC.md.
+1. Read CLAUDE.md and CONTEXT.md (repo root), then 00-control/HANDOFF.md,
+   STATE.md, DECISIONS.md, MASTER-SPEC.md.
 3. cd app && npm install && npm run build && npm test - all must pass clean.
 4. Proceed with the stage listed as "Next stage" above.
 

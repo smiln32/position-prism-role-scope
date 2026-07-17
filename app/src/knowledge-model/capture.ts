@@ -6,16 +6,27 @@ import { COLLECTION_KEYS } from './schema';
 import { newId } from './model';
 
 /**
- * Direct structured capture and owner-directed editing - the path that lets an
- * owner populate and correct the entity types the rule-based interview does not
+ * Direct structured capture and owner-directed editing - the path that
+ * populates and corrects the entity types the rule-based interview does not
  * create on its own (processes, relationships, decisions, judgments, history,
- * systems, commitments), and fix anything already captured.
+ * systems, commitments), and fixes anything already captured.
  *
- * Provenance: a directly-entered entity is the owner asserting knowledge in
- * their own words, so its source kind is 'interview' (it came from the owner)
- * with detail "Entered directly by the owner", confidence 'high', and
- * verified=true - the owner IS the source of truth for their own business, so
- * these do not carry a "needs verification" marker.
+ * PROVENANCE DEPENDS ON WHO IS TYPING (see DECISIONS.md 2026-07-16):
+ *
+ * - `owner` - the owner asserting knowledge in their own words. Source kind
+ *   'interview' with detail "Entered directly by the owner", confidence 'high',
+ *   verified=true. The owner IS the source of truth for their own business, so
+ *   these carry no "needs verification" marker.
+ *
+ * - `operator` - someone else (an advisor running the interview as a service)
+ *   turning the owner's verbatim answer into structure. That act is
+ *   interpretation, so the source kind is 'inferred', confidence 'medium', and
+ *   verified=false: the owner has not confirmed the structuring, and
+ *   deliverables must say so. The owner promotes it later via setVerified().
+ *
+ * Claiming "Entered directly by the owner" for something an operator typed
+ * would be a false attribution in the one field the whole product rests on
+ * (rules 6, 7 and 9). The caller must say which it is.
  *
  * Every function is pure: it returns a new model and mutates nothing. Edits
  * bump updatedAt so nothing changes silently (rule 9). No entity is ever
@@ -28,17 +39,45 @@ const NC = 'Not yet captured';
 const s = (v: string | undefined): string => (v ?? '').trim();
 const clean = (v: string | undefined): string => s(v) || NC;
 
-function ownerSource(now: string): SourceRef[] {
-  return [{ kind: 'interview', detail: 'Entered directly by the owner', capturedAt: now }];
+/** Who is entering this knowledge. Decides provenance - see the module note. */
+export type EnteredBy = 'owner' | 'operator';
+
+export interface Attribution {
+  enteredBy: EnteredBy;
+  /** Operator's name, when enteredBy is 'operator'. */
+  operatorName?: string;
+  /**
+   * Where the operator got this - ideally the id of the verbatim fact being
+   * structured, plus a human pointer. Recorded in SourceRef.detail so the
+   * trail back to the owner's own words survives in the export.
+   */
+  structuredFrom?: string;
 }
 
-function ownerBase(now: string) {
+/** The default: the owner is at the keyboard. Preserves Stage-2 behaviour. */
+export const OWNER: Attribution = { enteredBy: 'owner' };
+
+function attributionSource(now: string, by: Attribution): SourceRef[] {
+  if (by.enteredBy === 'owner') {
+    return [{ kind: 'interview', detail: 'Entered directly by the owner', capturedAt: now }];
+  }
+  const who = s(by.operatorName) || 'the operator';
+  const from = s(by.structuredFrom);
+  return [{
+    kind: 'inferred',
+    detail: `Structured by ${who}${from ? ` from ${from}` : ''} - not yet confirmed by the owner`,
+    capturedAt: now,
+  }];
+}
+
+function entryBase(now: string, by: Attribution) {
+  const owner = by.enteredBy === 'owner';
   return {
-    confidence: 'high' as const,
-    sources: ownerSource(now),
+    confidence: owner ? ('high' as const) : ('medium' as const),
+    sources: attributionSource(now, by),
     createdAt: now,
     updatedAt: now,
-    verified: true,
+    verified: owner,
   };
 }
 
@@ -77,7 +116,7 @@ function withEntity(model: KnowledgeModel, key: CollectionKey, entity: AnyEntity
 
 /* ---- add ---------------------------------------------------------------- */
 
-export function addRelationship(model: KnowledgeModel, input: RelationshipInput): KnowledgeModel {
+export function addRelationship(model: KnowledgeModel, input: RelationshipInput, by: Attribution = OWNER): KnowledgeModel {
   const now = new Date().toISOString();
   const category = (REL_CATEGORIES as string[]).includes(s(input.category))
     ? (input.category as RelationshipCategory) : 'other';
@@ -86,26 +125,26 @@ export function addRelationship(model: KnowledgeModel, input: RelationshipInput)
   const transferPlanStatus = (TRANSFER_STATUSES as string[]).includes(s(input.transferPlanStatus))
     ? (input.transferPlanStatus as TransferPlanStatus) : 'not-started';
   return withEntity(model, 'relationships', {
-    id: newId('rel'), type: 'relationship', ...ownerBase(now),
+    id: newId('rel'), type: 'relationship', ...entryBase(now, by),
     who: s(input.who), category,
     whyTheyMatter: clean(input.whyTheyMatter), history: clean(input.history),
     whatTheyExpect: clean(input.whatTheyExpect), transferRisk, transferPlanStatus,
   });
 }
 
-export function addDecision(model: KnowledgeModel, input: DecisionInput): KnowledgeModel {
+export function addDecision(model: KnowledgeModel, input: DecisionInput, by: Attribution = OWNER): KnowledgeModel {
   const now = new Date().toISOString();
   return withEntity(model, 'decisions', {
-    id: newId('dec'), type: 'decision', ...ownerBase(now),
+    id: newId('dec'), type: 'decision', ...entryBase(now, by),
     name: s(input.name), howDecided: clean(input.howDecided),
     realCriteria: list(input.realCriteria), thresholds: list(input.thresholds), examples: [],
   });
 }
 
-export function addProcess(model: KnowledgeModel, input: ProcessInput): KnowledgeModel {
+export function addProcess(model: KnowledgeModel, input: ProcessInput, by: Attribution = OWNER): KnowledgeModel {
   const now = new Date().toISOString();
   return withEntity(model, 'processes', {
-    id: newId('proc'), type: 'process', ...ownerBase(now),
+    id: newId('proc'), type: 'process', ...entryBase(now, by),
     name: s(input.name), purpose: clean(input.purpose), frequency: clean(input.frequency),
     steps: list(input.steps).map((description, i) => ({ order: i + 1, description })),
     dependencies: list(input.dependencies), failurePoints: list(input.failurePoints),
@@ -113,35 +152,35 @@ export function addProcess(model: KnowledgeModel, input: ProcessInput): Knowledg
   });
 }
 
-export function addJudgment(model: KnowledgeModel, input: JudgmentInput): KnowledgeModel {
+export function addJudgment(model: KnowledgeModel, input: JudgmentInput, by: Attribution = OWNER): KnowledgeModel {
   const now = new Date().toISOString();
   return withEntity(model, 'judgments', {
-    id: newId('judg'), type: 'judgment', ...ownerBase(now),
+    id: newId('judg'), type: 'judgment', ...entryBase(now, by),
     heuristic: s(input.heuristic), context: s(input.context) || undefined,
   });
 }
 
-export function addHistory(model: KnowledgeModel, input: HistoryInput): KnowledgeModel {
+export function addHistory(model: KnowledgeModel, input: HistoryInput, by: Attribution = OWNER): KnowledgeModel {
   const now = new Date().toISOString();
   return withEntity(model, 'history', {
-    id: newId('hist'), type: 'history', ...ownerBase(now),
+    id: newId('hist'), type: 'history', ...entryBase(now, by),
     whatHappened: s(input.whatHappened), when: clean(input.when), whatWasLearned: clean(input.whatWasLearned),
   });
 }
 
-export function addSystem(model: KnowledgeModel, input: SystemInput): KnowledgeModel {
+export function addSystem(model: KnowledgeModel, input: SystemInput, by: Attribution = OWNER): KnowledgeModel {
   const now = new Date().toISOString();
   return withEntity(model, 'systems', {
-    id: newId('sys'), type: 'system', ...ownerBase(now),
+    id: newId('sys'), type: 'system', ...entryBase(now, by),
     name: s(input.name), kind: clean(input.kind), whatItDoes: clean(input.whatItDoes),
     accessHeldBy: clean(input.accessHeldBy), quirks: list(input.quirks),
   });
 }
 
-export function addCommitment(model: KnowledgeModel, input: CommitmentInput): KnowledgeModel {
+export function addCommitment(model: KnowledgeModel, input: CommitmentInput, by: Attribution = OWNER): KnowledgeModel {
   const now = new Date().toISOString();
   return withEntity(model, 'commitments', {
-    id: newId('com'), type: 'commitment', ...ownerBase(now),
+    id: newId('com'), type: 'commitment', ...entryBase(now, by),
     withWhom: s(input.withWhom), whatWasPromised: clean(input.whatWasPromised),
     direction: clean(input.direction), writtenDown: Boolean(input.writtenDown),
   });

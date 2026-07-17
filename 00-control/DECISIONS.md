@@ -497,3 +497,259 @@ Role DNA schema sharing, cloud sync). Highest pre-ship risk: data durability
 (knowledge currently lives in browser localStorage). Session handoff written to
 00-control/HANDOFF-2026-07-15.md; STATE.md updated. | Proposed (owner decisions
 pending).
+
+2026-07-16 | Workspace structure (Claude Code) | SPEC AMENDMENT. CLAUDE.md moves
+from 00-control/ to the repo ROOT and lives there and nowhere else; a new root
+CONTEXT.md carries the stage map / task routing. MASTER-SPEC.md's workspace
+table (line 125) is amended to match: CLAUDE.md and CONTEXT.md at root,
+00-control/ keeps STATE.md, DECISIONS.md, the spec, and the handoffs. Rationale:
+owner directive 2026-07-16, and root is where a fresh agent session actually
+looks for operating rules - a nested CLAUDE.md is not reliably loaded, so the
+non-negotiables (never fabricate, no stored credentials, frozen schema) were one
+directory further away than the rules that matter most should ever be. Deviating
+from the spec silently is forbidden by CLAUDE.md rule 5, hence this entry. Moved
+with git mv (history preserved as a rename); all path-bearing references updated
+(STATE.md resume path, HANDOFF.md, HANDOFF-2026-07-15.md, app/README.md,
+CONTEXT.md). Bare "read CLAUDE.md" mentions were left alone - still true.
+| Done (owner-directed).
+
+2026-07-16 | 06-export documentation (Claude Code) | Wrote 06-export/README.md.
+The folder was specified at MASTER-SPEC.md:131 in Stage 0 and had sat EMPTY ever
+since - the only unpopulated workspace folder. The functionality was never
+missing: it shipped across Stages 2/4/6 and is documented now, not built. Three
+distinct exports, previously undocumented and easy to confuse: (1) project
+export/import, lossless round-trip, ProjectStore.exportJson/importJson
+(store.ts:202/206), validate-before-accept, migrate-on-load; (2) sealed export,
+EncryptedStorage.exportSealed (vault.ts:224), AES-GCM under the owner's
+passphrase, passphrase never exported so a sealed file without it is
+unrecoverable by design; (3) AI-ready knowledge export, the ninth deliverable
+(render.ts:268/288), renders via exportModel through Doc.c() so auditRendered()
+still proves zero invention. Noted: mergeModels() remains unwired - import
+replaces, never merges. | Done.
+
+2026-07-16 | ICM conformance (Claude Code) | Audited the workspace against the
+Interpretable Context Methodology (Van Clief & McDermott, arXiv:2603.16021) and
+logged ICM-AUDIT-LOG.md at root: 6/24, "weak". Decision: do NOT convert to the
+paper's stages/NN_name/{CONTEXT.md,references/,output/} tree. Rationale: this is
+an application repo whose numbered folders are documentation domains describing
+app/src/, not stages an agent flows through; it already conforms exactly to its
+own spec (MASTER-SPEC.md:123-133). Converting would rewrite cross-references
+across DECISIONS.md (referenced by 23 files), STATE.md, and the handoffs, and
+break the documented resume path, against a build that is complete and green at
+106 tests. Three competing structures exist and the target must be settled
+before any conversion: the paper's ICM, the master prompt's 18-folder
+ICM_WORKSPACE (00-control..17-commercialization, never built - see the owner's
+own critique), and what was actually built (9 folders). Cheap non-breaking wins
+taken instead: root CONTEXT.md (ICM-05), CLAUDE.md to root (ICM-06),
+06-export documented (ICM-09). | Audited; conversion declined pending owner
+decision on which ICM is the target.
+
+2026-07-16 | Correction to 06-export docs (Claude Code) | The first draft of
+06-export/README.md described exportSealed's PURPOSE from its signature and from
+STATE.md prose rather than from the source, and got it wrong: it claimed the
+function was for "handing a project to someone who should hold the file but not
+the contents." The docstring (vault.ts:218-223) says the opposite job - it lets a
+locked-out owner preserve ciphertext before resetting so a reset never destroys
+data (integrity rule 9). Also corrected: exportSealed takes no projectId, it
+sweeps every managed key (projectKeys/isManagedKey, vault.ts:40-41,69-75) - all
+projects AND their backup slots - so it is a whole-vault dump, not a per-project
+export. Verified-and-kept: importJson validates before saving and throws, never
+partially applying (store.ts:206-219); PBKDF2/SHA-256 at KDF_ITERATIONS=250_000
+and AES-GCM 256-bit (crypto.ts:18-21). Rationale for logging a docs correction:
+the error was plausible-sounding invention presented with file:line citations -
+precisely what rules 6 and 7 forbid - and it survived a full session because it
+read as authoritative. Noted for future sessions: grep gives signatures, not
+behaviour; read the body before documenting what a function is FOR. | Corrected.
+
+2026-07-16 | Stage map corrections (Claude Code) | Second correction pass on the
+same root cause as the exportSealed error: CONTEXT.md's first draft inferred its
+"built in" column from folder numbers and README headers rather than from the
+spec's staged build plan, and two rows were wrong. (a) 06-export was labelled
+"Stage 2". It spans three: model JSON export/import came with the frozen contract
+in Stage 1 (MASTER-SPEC.md:149-150), project save/load/resume/export in Stage 2
+(:154-155), and the AI-ready export renderer shipped as the ninth deliverable in
+Stage 6. Note spec-vs-built drift, recorded not smoothed: the spec assigned AI
+export to Stage 7 (:178-180); as built it landed in Stage 6, with Stage 7
+contributing export-validates-against-schema evidence. Sealed export came later
+still (PR #4, 2026-07-13). (b) 08-docs was labelled "Stage 8". It spans Stage 2
+(VISUAL-SYSTEM.md, per its own line 1 and spec :154), Stage 8 (HELP.md,
+DISCLAIMER.md), and post-build 2026-07-13 (SECURITY.md, PR #4). Both rows now
+cite their sources inline, and the numbering caveat points readers at
+MASTER-SPEC.md:143-186 rather than the folder prefix. | Corrected.
+
+2026-07-16 | Area count corrected: 44 -> 50 (Claude Code) | STATE.md contradicted
+itself: the Stage 4 entry said "44 areas total" while the Stage 7 entry said
+"completeness of 50 areas". EXPANSION-HANDOFF.md said "8 tracks / 50 areas".
+Counted from the source (TRACKS in app/src/interview/engine.ts, area entries
+inside the areas[] blocks): 50 areas across 8 tracks. 50 is correct; STATE.md's
+Stage 4 line was wrong and has been fixed with a note. CONTEXT.md had inherited
+the wrong 44 from STATE.md and is corrected too. metrics.ts never hardcoded
+either number - it computes totalAreas by summing perTrack, which is why no test
+caught the drift. | Corrected.
+
+2026-07-16 | EXPANSION-HANDOFF refresh (Claude Code) | The roadmap document was
+written 2026-07-11 and had gone stale enough to be actively harmful: it listed
+master at 56 tests (106), showed PRs #1/#2 as pending review when both had
+merged, omitted #4/#7/#9/#10/#11 entirely, and its roadmap told a future session
+to fix newId's collision-prone 8-char suffix and add quota handling/backups -
+all shipped in PR #6 on 2026-07-13. A session following it would have redone
+finished work. Refreshed against verified state: PR table rebuilt from git
+history, done items marked DONE rather than deleted (so a later reader sees they
+were considered and closed, not dropped), local path corrected (repo moved under
+Downloads/apps/), CLAUDE.md/CONTEXT.md root locations reflected, roadmap item I
+(richer inputs, local-first) added from the 2026-07-15 decision, and a pointer to
+PATH-TO-SHIP.md added at the top since shipping now gates sensibly picking any
+roadmap item. Preserved verbatim: section 5 non-negotiables (still exactly
+right) and the section 4 architecture map (still accurate; its "8 tracks / 50
+areas" was correct where STATE.md was wrong). Also fixed NEXT-STEPS.md:130,
+which still listed CLAUDE.md under 00-control/ - a list-phrased reference the
+earlier path-based grep missed. | Done.
+
+2026-07-16 | P1 Provenance depends on who is typing (Claude Code) | DEFECT, found
+by reading capture.ts against the owner's service model. capture.ts hardcoded
+EVERY structured entity it created as source kind 'interview', detail "Entered
+directly by the owner", confidence 'high', verified=true. The Stage-2 rationale
+(":241-246", the owner is the source of truth for their own business) is sound
+ONLY while the owner is the one typing. The owner now intends to run the
+interviews himself as a service and hand back reports - so HE types the
+structure, interpreting the owner's verbatim answers. Every commitment, process
+and relationship he created would have carried provenance asserting the owner
+entered and confirmed it. Nobody did. That is a false attribution in the single
+field the entire product rests on (rules 6, 7, 9), and it was invisible because
+every doc assumes owner==user. Fix: capture.ts gains an Attribution parameter
+({enteredBy: 'owner'|'operator', operatorName?, structuredFrom?}) defaulting to
+OWNER, so existing behaviour and all prior call sites are unchanged. enteredBy
+'operator' yields kind 'inferred' (structuring someone's words IS
+interpretation), confidence 'medium', verified=FALSE, and detail "Structured by
+<name> from <source> - not yet confirmed by the owner". Deliverables therefore
+render operator-entered knowledge "(needs verification)", which is true. NO
+SCHEMA CHANGE: 'inferred' is an existing SourceKind and the trail back to the
+verbatim fact rides in SourceRef.detail. This completes a workflow that was
+already built but unreachable: nothing was ever born unverified, so setVerified()
+(the owner's promotion path) had nothing to promote. Now: operator structures ->
+renders unverified -> owner reviews -> setVerified -> confirmed. KnowledgeScreen
+gains a "Who is entering this?" control (memory-only for the sitting; the choice
+persists where it belongs, inside each entity's SourceRef). +9 tests incl. 3
+component tests proving the UI actually threads it - a correct capture.ts wired
+to a default-only screen would still have recorded operator entries as the
+owner's. | Done.
+
+2026-07-16 | P3 The May bug (Claude Code) | DEFECT. "First Year Without the
+Founder" placed facts on the month-by-month calendar with
+`f.statement.toLowerCase().includes(month.toLowerCase())` (render.ts:186).
+MONTH_NAMES contains 'May', so every statement using the modal verb - "we may
+need to order early" - was filed under May in a client-facing deliverable.
+'March' (the verb) and 'August' (the adjective) had the same flaw; 'Mayfair'
+and 'Augusta' matched too. Notable: extract.ts already guarded against exactly
+this by excluding MONTHS from contentWords (:50) - render.ts simply never got
+the same care. Fix: factsMentioningMonth() matches on word boundaries, and
+case-SENSITIVELY for the three month names that are also ordinary English words
+(months are proper nouns; an owner writing about May capitalises it). The nine
+unambiguous names stay case-insensitive so a lowercase "january" still lands.
++5 tests. | Done.
+
+2026-07-16 | P4 Name-gap noise (Claude Code) | DEFECT. detectUndefinedNames
+flagged every capitalised non-initial word individually, so the Stage 5 fixture
+- a FOUR-line vendor list - raised ELEVEN gaps including "Who or what is
+Machine?", "Tool", "Brothers", "Supply" and "FIXTURE": it split the business's
+OWN name into three separate mysteries and treated a document label as a person
+(evidence has been sitting in 07-testing/stage5-acceptance.md since Stage 5,
+never logged as a defect). At 20 employees with real documents this buries the
+dashboard's open questions. Four fixes: (1) profileNames() makes the business's
+own name and the owner's own name known - applied at DETECTION time, not seeded
+into memory, so existing projects get it with no migration; (2) consecutive
+capitalised words group into ONE name ("Ed Kowalski" asks one question, not two;
+a run whose words are all individually known is known, since punctuation like
+"&" splits "Hartwell Machine & Tool"); (3) ALL-CAPS words are labels or
+acronyms, not people - "FIXTURE" no longer raises a question; (4) MAX_NAME_GAPS
+= 25 per document, with the overflow COUNTED and reported in
+AnalysisReport.nameGapsSuppressed, the same bargain MAX_LINES already makes -
+facts are never capped, only the questions about them. Same fixture now raises 3
+gaps (Valley Brothers Supply, Ed Kowalski, Precision Carbide) instead of 11.
+One existing test asserted the old per-word behaviour (expected a gap for "Ed"
+OR "Kowalski"); it was updated to assert the better behaviour and is now the
+regression guard. +4 tests. | Done.
+
+2026-07-16 | P5 Track 7 answers become owner-declared risks (Claude Code) |
+DEFECT of omission. Track 7 is titled "Risks & Fragilities" and asks six
+questions about risk - and no answer to any of them ever became a RiskEntity.
+Answers landed as facts only; RiskEntities came solely from the ONLY_ME regex
+(any track). So the Knowledge Risk Report ignored the six questions explicitly
+about risk, and every risk it did show scored an identical 95 (same inputs:
+inferred + SPOF + no mitigation + unverified + medium) - a "ranked" register
+that ranked nothing. Fix: TrackArea gains optional riskKind; all six Track 7
+areas carry one (owner concern / single point of failure / diligence exposure /
+fragility / slow leak / outside shock). A substantive primary answer to such an
+area is recorded as a RiskEntity too: description = the answer VERBATIM, source
+'interview' (the owner said it - this is deliberately NOT 'inferred'; the
+engine's integrity note was updated), confidence high, verified false. Guards:
+primary answers only (follow-ups and revisits elaborate an area that already
+produced its risk), and a leading dismissal ("nothing really...") stays a fact
+only - a scored risk reading "Nothing really keeps me up" would be the May bug
+all over again. Scoring now has real spread (owner-declared 75, SPOF-flavored
+100, inferred SPOF 95) without touching the published formula. Scope note:
+track-1 'first-break' arguably also qualifies; left alone deliberately -
+conservative first, widen after the pilot shows how Track 7 risks read. +4
+tests. | Done.
+
+2026-07-16 | P6 Document lines render grouped, not blockquoted (Claude Code) |
+Deliverable-quality fix. The Successor's Handbook rendered every document-
+sourced fact as its own blockquote with per-line attribution, so a 500-line SOP
+became 500 blockquotes with blank lines between - tripling page count and
+burying the interview knowledge the handbook exists to carry. Now grouped under
+one h3 per source document (name from ProjectFile.documents - owner-provided
+data, not invention; heading not audit-registered, same as the month headings)
+and rendered as compact bullets. Capture unchanged: every line is still a
+verbatim Fact with document id + line number on its SourceRef, all of it in the
+AI export. Only the handbook's presentation changed. | Done.
+
+2026-07-16 | P7 "Not asked" vs "not yet captured" (Claude Code) | Deliverable-
+honesty fix for the service model. Every empty section printed "Not yet
+captured." - which reads as unfinished work when the engagement DELIBERATELY
+scoped to three tracks. Two different truths need two labels: NOT_ASKED ("This
+part of the interview has not been asked yet.") when interviewMemory shows the
+track/area was never reached, NOT_CAPTURED only when it WAS asked and nothing
+is on record - the second being a real gap that belongs in the report.
+Implemented in the renderers only (quoteArea() consults trackProgress; handbook
+per-track; firstYear/emergencyBrief/decisionPlaybook/memoryArchive per-area).
+Entity-backed sections (relationships, commitments, systems...) keep NOT_CAPTURED
+- they are populated by structuring, not by reaching an area. The engine's
+completion semantics (allComplete = all 50 areas) are deliberately untouched:
+that is the engagement-type knob, deferred with P2-A pending the pilot. +3
+tests. | Done.
+
+2026-07-16 | Living-doc staleness cleanup (Claude Code) | Follow-through on the
+audit that found EXPANSION-HANDOFF actively harmful. Fixed the living docs that
+asserted stale facts: README.md:160 claimed "the existing optional AI adapter"
+- it does NOT exist on master (draft PR #3); now says so plainly. README's
+governing-docs pointer updated for root CLAUDE.md/CONTEXT.md. 02-interview
+README: "coverage /8" (wrong for 7 of 8 tracks) and "33-test suite";
+03-analysis README: "40-test suite" - counts replaced with a pointer to
+STATE.md rather than a new number that would just drift again (the 44-vs-50
+lesson: docs that embed counts go stale silently). 05-deliverables README:
+"numeric scoring arrives Stage 7" future tense, shipped long ago. HELP.md (the
+in-product help): now mentions passphrase protection (shipped 2026-07-13,
+including that a forgotten passphrase is unrecoverable) and the .txt/.md/.csv
+document limitation - both documented everywhere except the one file users
+read. build-review.md: dated point-in-time banner added; it asserted VERIFIED
+consistency (56 tests, eight screens) that no longer holds and claimed no
+exemption for itself while granting one to other evidence files. Point-in-time
+stage evidence files left untouched per their own exemption. | Done.
+
+2026-07-16 | PRs #3 and #8 archived (Claude Code, owner-directed) | Owner:
+"leave it for later and archive that and 8 if they aren't being used now."
+Verified neither is in use, then closed both on GitHub with rationale comments.
+#8 (docs/session-handoff-2026-07-13): superseded by HANDOFF-2026-07-15.md,
+pure staleness, no decision content lost. #3 (feature/llm-interview-adapter):
+DEFERRED, NOT REJECTED. The owner's decision is only "not before the pilot" -
+run the first service engagement structuring by hand, and revive the adapter
+if that labor proves to be the bottleneck. Critical for whoever revives it:
+the branch predates PRs #4/#5/#6/#7/#9 (a diff against master shows ~4,300
+deletions - no vault.ts, crypto.ts, capture.ts, KnowledgeScreen); reviving
+means PORTING llm.ts + the InterviewEngine interface onto today's master,
+never merging the branch as-is. The adapter design itself is sound and worth
+keeping: deterministic rules floor first, LLM only reworder + extractor on
+top, every extraction 'inferred'/low/unverified. BOTH BRANCHES ARE RETAINED
+on origin as the archive - closing a PR deletes nothing; do not delete
+feature/llm-interview-adapter. This also finally gives #3 the explicit
+status the decision log never had (flagged in the 2026-07-16 audit). | Done.

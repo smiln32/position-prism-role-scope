@@ -12,6 +12,12 @@ conflicts can quote the original.
   with document id + "name, line N". Confidence high (documents are
   authoritative per spec), verified false until the owner confirms.
 - Undefined names raise Gaps, same conservative detector as interviews.
+  Since 2026-07-16 (DECISIONS.md, P4): consecutive capitalized words are ONE
+  name ("Ed Kowalski" asks one question, not two), the business's and owner's
+  own names are always known, ALL-CAPS labels are skipped, and name gaps cap
+  at 25 per document with the overflow counted in
+  AnalysisReport.nameGapsSuppressed. Facts are never capped, only the
+  questions about them.
 - 500-line cap per document; skipped lines are reported, never silent.
 
 ## Cross-reference & conflicts
@@ -28,4 +34,5 @@ verifies both). Gap resolves. Nothing is ever deleted.
 ## Acceptance
 07-testing/stage5-acceptance.md - before/after model diff for the fixture
 document set with the surfaced conflict resolved end to end.
-Automated: extract.test.ts (7 tests) inside the 40-test suite.
+Automated: extract.test.ts in the app's test suite (the suite grows;
+STATE.md carries the current count).

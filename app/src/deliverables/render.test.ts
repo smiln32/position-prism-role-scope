@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   DELIVERABLES, renderPackage, renderDeliverable, auditRendered,
-  DISCLAIMER, NOT_CAPTURED,
+  DISCLAIMER, NOT_CAPTURED, NOT_ASKED, factsMentioningMonth,
 } from './render';
+import { analyzeDocument } from '../analysis/extract';
+import type { FactEntity } from '../knowledge-model/schema';
 import { fixtureModel } from '../knowledge-model/fixture';
 import { createEmptyModel } from '../knowledge-model/model';
 import { RuleBasedEngine } from '../interview/engine';
@@ -134,5 +136,97 @@ describe('Stage 6 acceptance: deliverable generation', () => {
     expect(byId['risk-report']).toContain('single point of failure');
     expect(byId['risk-report']).toContain('What is "the Meridian situation"');
     expect(byId['ai-export']).toContain('"schemaVersion": "1.0.0"');
+  });
+});
+
+/**
+ * P3 (2026-07-16). "First Year Without the Founder" filed facts onto the
+ * calendar with a case-insensitive substring match, so every statement
+ * containing the modal verb "may" landed under May. Three month names are also
+ * ordinary words; those are matched case-sensitively now.
+ * See DECISIONS.md 2026-07-16.
+ */
+describe('P3: month matching on the calendar', () => {
+  const fact = (statement: string): FactEntity => ({
+    id: 'fact_' + statement.slice(0, 6), type: 'fact', confidence: 'high',
+    sources: [{ kind: 'interview', capturedAt: '2026-01-01T00:00:00.000Z' }],
+    createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+    verified: false, statement,
+  });
+
+  it('does not file the modal verb "may" under May', () => {
+    const facts = [fact('We may need to order steel early if the mill is behind.')];
+    expect(factsMentioningMonth(facts, 'May')).toEqual([]);
+  });
+
+  it('still files a real May mention under May', () => {
+    const facts = [fact('The shop closes the last week of May every year.')];
+    expect(factsMentioningMonth(facts, 'May').length).toBe(1);
+  });
+
+  it('does not file "march" the verb, or "august" the adjective', () => {
+    expect(factsMentioningMonth([fact('Do not march into that negotiation cold.')], 'March')).toEqual([]);
+    expect(factsMentioningMonth([fact('It is an august old firm with deep pockets.')], 'August')).toEqual([]);
+    expect(factsMentioningMonth([fact('Inventory count happens in March.')], 'March').length).toBe(1);
+  });
+
+  it('unambiguous months stay case-insensitive', () => {
+    expect(factsMentioningMonth([fact('we shut down in january for two weeks')], 'January').length).toBe(1);
+  });
+
+  it('respects word boundaries', () => {
+    expect(factsMentioningMonth([fact('Our Mayfair account is the biggest.')], 'May')).toEqual([]);
+    expect(factsMentioningMonth([fact('The Augusta job runs long.')], 'August')).toEqual([]);
+  });
+});
+
+/**
+ * P6 + P7 (2026-07-16). P7: a deliberately scoped engagement used to print
+ * "Not yet captured" across every part the interview never reached, so focused
+ * work read as failed work. P6: document lines rendered as one blockquote each,
+ * so a long SOP buried the interview knowledge. See DECISIONS.md 2026-07-16.
+ */
+describe('P6/P7: scope-aware sections and compact document rendering', () => {
+  const emptyProject = (): ProjectFile => ({
+    formatVersion: '1.0.0',
+    model: createEmptyModel('p7', { businessName: 'Fixture Co', ownerName: 'Owner' }),
+    sessions: [],
+  });
+
+  it('a never-interviewed project says "not asked", not "not captured"', () => {
+    const rendered = renderDeliverable(DELIVERABLES.find((d) => d.id === 'handbook')!, emptyProject(), 1);
+    expect(rendered.markdown).toContain(NOT_ASKED);
+    // The entity-backed sections keep their own honest label:
+    expect(rendered.markdown).toContain(NOT_CAPTURED);
+  });
+
+  it('an asked-but-empty area still says "not yet captured"', () => {
+    const project = emptyProject();
+    // change-slowly was reached (marked answered), never produced a fact:
+    project.interviewMemory = {
+      trackProgress: { 'track-8': { answeredAreas: ['change-slowly'] } },
+      pendingThreads: [], knownNames: [], answerCount: 1,
+    };
+    const rendered = renderDeliverable(DELIVERABLES.find((d) => d.id === 'first-year')!, project, 1);
+    const changeSlowly = rendered.markdown.split('## What to change slowly')[1].split('##')[0];
+    const neverChange = rendered.markdown.split('## What should never change')[1].split('##')[0];
+    expect(changeSlowly).toContain(NOT_CAPTURED); // asked, nothing recorded
+    expect(neverChange).toContain(NOT_ASKED);     // never reached
+  });
+
+  it('document lines render grouped under their document, as bullets not blockquotes', () => {
+    const project = emptyProject();
+    project.documents = [{ id: 'doc_1', name: 'opening-procedure.txt', addedAt: 'now', text: '' }];
+    const analyzed = analyzeDocument(project.model, [], {
+      id: 'doc_1', name: 'opening-procedure.txt', addedAt: 'now',
+      text: 'Unlock at six and start the compressors.\nWalk the floor before the crew arrives.',
+    });
+    project.model = analyzed.model;
+    const rendered = renderDeliverable(DELIVERABLES.find((d) => d.id === 'handbook')!, project, 1);
+    expect(rendered.markdown).toContain('### opening-procedure.txt');
+    expect(rendered.markdown).toContain('- Unlock at six and start the compressors.');
+    expect(rendered.markdown).not.toContain('> Unlock at six');
+    // The zero-invention audit still holds over the new shape:
+    expect(auditRendered(rendered, project.model)).toEqual([]);
   });
 });

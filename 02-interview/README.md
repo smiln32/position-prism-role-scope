@@ -38,8 +38,15 @@ Tracks can be taken in any order; a session picks one track per sitting.
 4. Brief answers (under 12 words) get one gentle probe. No entity is
    created - brevity is not knowledge.
 5. Follow-ups queue FIFO and are asked before new areas. Coverage readout
-   = areas answered / 8. The session reports complete only when all areas
-   are covered and the queue is empty.
+   = areas answered / areas in the selected track (8 for Track 1, 6 for the
+   rest; 50 across all eight). The interview reports complete only when
+   every track's areas are covered and the queue is empty.
+6. Track 7 ("Risks & Fragilities") answers additionally become
+   owner-declared RiskEntities - verbatim, source 'interview', high
+   confidence, unverified - because those six questions ask about risk in
+   so many words (TrackArea.riskKind; DECISIONS.md 2026-07-16, P5).
+   A leading dismissal ("nothing really...") stays a fact only. Before
+   this, no Track 7 answer ever reached the Knowledge Risk Report.
 
 ## Cross-session memory (Stage 4)
 
@@ -64,4 +71,5 @@ right?" thread for a later session. Identical re-answers do not flag.
 07-testing/stage3-acceptance.md - Track 1 transcript + model diff with
 zero-fabrication audit. 07-testing/stage4-acceptance.md - multi-session
 evidence: thread persistence, worked contradiction, all tracks reachable.
-Automated: engine.test.ts (5) + stage4.test.ts (6) inside the 33-test suite.
+Automated: engine.test.ts + stage4.test.ts in the app's test suite (the
+suite grows; STATE.md carries the current count).

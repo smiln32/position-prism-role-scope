@@ -1,5 +1,12 @@
 # Full-Build Cohesion & Consistency Review (post-Stage 8)
 
+_Point-in-time record of the original build review (2026-07-10, 56-test
+baseline, eight screens). Its "verified" claims were true THEN and are not
+maintained - the suite, screen count, and control files have all moved since
+(see STATE.md). Marked 2026-07-16 after this file's unmarked staleness was
+itself flagged in an audit; it grants other evidence files a point-in-time
+exemption at §"Point-in-time evidence" below and now claims the same one._
+
 Requested by Carla. Method: file-level audit of the actual repository -
 grep, diff, and regeneration checks - not recollection.
 

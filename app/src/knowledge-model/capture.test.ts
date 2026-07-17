@@ -191,3 +191,79 @@ describe('structured capture - list-field edit', () => {
     expect(() => addListItem(m, 'nope', 'steps', 'x')).toThrow(/no such entity/i);
   });
 });
+
+/**
+ * P1 (2026-07-16). Provenance depends on who is typing. Before this, everything
+ * capture.ts created claimed source detail "Entered directly by the owner" and
+ * verified=true - so an advisor running the interview as a service produced
+ * entities that falsely claimed the owner had entered and confirmed them.
+ * See DECISIONS.md 2026-07-16.
+ */
+describe('P1: attribution', () => {
+  const base = () => createEmptyModel('p1', { businessName: 'B', ownerName: 'O' });
+
+  it('owner entry is unchanged: interview source, high, verified', () => {
+    const m = addCommitment(base(), { withWhom: 'Henderson', whatWasPromised: 'free freight' });
+    const c = m.entities.commitments[0];
+    expect(c.sources[0].kind).toBe('interview');
+    expect(c.sources[0].detail).toBe('Entered directly by the owner');
+    expect(c.confidence).toBe('high');
+    expect(c.verified).toBe(true);
+  });
+
+  it('defaults to owner when no attribution is given (Stage-2 behaviour)', () => {
+    const m = addProcess(base(), { name: 'Payroll' });
+    expect(m.entities.processes[0].verified).toBe(true);
+    expect(m.entities.processes[0].sources[0].kind).toBe('interview');
+  });
+
+  it('operator entry is inferred, medium, UNVERIFIED, and names who + source', () => {
+    const m = addCommitment(base(), { withWhom: 'Henderson', whatWasPromised: 'free freight' },
+      { enteredBy: 'operator', operatorName: 'J. Smith', structuredFrom: 'fact_abc (Track 3, answer 4)' });
+    const c = m.entities.commitments[0];
+    expect(c.sources[0].kind).toBe('inferred');
+    expect(c.sources[0].detail).toBe(
+      'Structured by J. Smith from fact_abc (Track 3, answer 4) - not yet confirmed by the owner');
+    expect(c.confidence).toBe('medium');
+    expect(c.verified).toBe(false);
+    // Never claims the owner did it:
+    expect(c.sources[0].detail).not.toContain('Entered directly by the owner');
+  });
+
+  it('an operator entry never claims owner authorship, across all seven types', () => {
+    const by = { enteredBy: 'operator' as const, operatorName: 'J. Smith' };
+    let m = base();
+    m = addRelationship(m, { who: 'A' }, by);
+    m = addDecision(m, { name: 'B' }, by);
+    m = addProcess(m, { name: 'C' }, by);
+    m = addJudgment(m, { heuristic: 'D' }, by);
+    m = addHistory(m, { whatHappened: 'E' }, by);
+    m = addSystem(m, { name: 'F' }, by);
+    m = addCommitment(m, { withWhom: 'G' }, by);
+    const all = [
+      ...m.entities.relationships, ...m.entities.decisions, ...m.entities.processes,
+      ...m.entities.judgments, ...m.entities.history, ...m.entities.systems, ...m.entities.commitments,
+    ];
+    expect(all.length).toBe(7);
+    for (const e of all) {
+      expect(e.verified).toBe(false);
+      expect(e.sources[0].kind).toBe('inferred');
+      expect(e.sources[0].detail).toContain('Structured by J. Smith');
+    }
+    expect(validateModel(m)).toEqual([]);
+  });
+
+  it('falls back to "the operator" when no name is given', () => {
+    const m = addSystem(base(), { name: 'QuickBooks' }, { enteredBy: 'operator' });
+    expect(m.entities.systems[0].sources[0].detail)
+      .toBe('Structured by the operator - not yet confirmed by the owner');
+  });
+
+  it('the owner can promote an operator entry via setVerified', () => {
+    let m = addCommitment(base(), { withWhom: 'Henderson' }, { enteredBy: 'operator', operatorName: 'J' });
+    const id = m.entities.commitments[0].id;
+    expect(m.entities.commitments[0].verified).toBe(false);
+    m = setVerified(m, id, true);
+    expect(m.entities.commitments[0].verified).toBe(true);
+  });
+});

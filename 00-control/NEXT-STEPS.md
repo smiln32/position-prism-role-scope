@@ -1,22 +1,32 @@
 # NEXT STEPS — where to pick up
 
-_Last updated: 2026-07-13. This is the short, current "where do I start" note.
+_Last updated: 2026-07-16. This is the short, current "where do I start" note.
 For the fuller roadmap and architecture, read `EXPANSION-HANDOFF.md` (§4 map,
-§5 non-negotiables, §6 full roadmap A–H). Read `CLAUDE.md` before writing code._
+§5 non-negotiables, §6 full roadmap A–H). Read `CLAUDE.md` (repo root) before
+writing code._
+
+> **Since 2026-07-13, below:** PRs #7/#9/#10 merged 2026-07-15 (route-level code
+> splitting 87.2→69.0 KB gzip; scroll-to-top on navigation; top-level README +
+> `.env` gitignore). `PATH-TO-SHIP.md` now tracks the prototype→product gap and
+> **three owner decisions gate it** (hosted site vs. desktop app; free vs. paid;
+> adapter #3 in or out of v1) — read it before picking a roadmap item, since the
+> distribution choice drives most of the remaining work. Docs/workspace pass
+> 2026-07-16 moved `CLAUDE.md` to root and added `CONTEXT.md`. The section-3
+> priorities below still stand.
 
 ---
 
 ## 1. Current state (as of 2026-07-13)
 
 The staged build (Stages 0–8) is complete and approved on `master`. Five
-expansion PRs have now **merged to master**; only the LLM adapter is still open
-(a draft, blocked on your API-key check).
+expansion PRs have now **merged to master**; the LLM adapter (#3) was
+**archived 2026-07-16** (deferred pending the pilot), and no PRs remain open.
 
 | PR | Branch | Status | Notes |
 |----|--------|--------|-------|
 | #1 | `maintenance/merge-report-timestamp-fix` | **Merged** ✅ | Merge report counts content changes only, not timestamp bumps |
 | #2 | `feature/structured-knowledge-capture` | **Merged** ✅ | Direct structured capture + owner-facing Knowledge screen + jsdom component tests. Brought dev-deps `jsdom` + `@testing-library/*` to master. |
-| #3 | `feature/llm-interview-adapter` | **Open — DRAFT** ⏸️ | Optional Anthropic (Haiku) interview adapter. Engine logic unit-tested; **the live network + async UI path is NOT browser-verified.** Do not merge until it is (see item 3A below). |
+| #3 | `feature/llm-interview-adapter` | **Closed — archived 2026-07-16** 📦 | Deferred, not rejected. Revive by **porting onto master** (branch predates #4–#9; never merge as-is) if pilot structuring labor demands it — see EXPANSION-HANDOFF §6A. |
 | #4 | `feature/data-at-rest-encryption` | **Merged** 🔐 | Passphrase protection for localStorage behind the StorageLike seam; frozen schema untouched; passphrase memory-only. |
 | #5 | `feature/list-field-editing` | **Merged** ✅ | Finish structured capture (item 3C): array fields editable item-by-item. |
 | #6 | `feature/storage-durability` | **Merged** 🛟 | Robustness item E (non-speculative parts): collision-proof `newId` + a one-deep backup slot with corrupt-primary recovery and quota-aware save errors. |
@@ -58,7 +68,7 @@ labeled inference only, never delete captured knowledge, no stored credentials,
 zero-invention audit must keep passing, don't touch the frozen schema without a
 versioned decision).
 
-### A. Finish the LLM adapter (PR #3) — needs YOU for one step
+### A. ~~Finish the LLM adapter (PR #3)~~ — ARCHIVED 2026-07-16, revisit after the pilot
 The blocker is verification, not code. The engine is written and unit-tested;
 the live path has never run against a real key.
 1. `git checkout feature/llm-interview-adapter`, then `npm install && npm run dev`.
@@ -127,9 +137,11 @@ open.
 
 ## 4. Map of the important files
 
-- `00-control/` — `CLAUDE.md` (rules), `MASTER-SPEC.md`, `STATE.md` (live
-  inventory), `DECISIONS.md` (append-only log), `EXPANSION-HANDOFF.md` (full
-  roadmap), this file.
+- **Repo root** — `CLAUDE.md` (rules; moved here 2026-07-16, lives at root and
+  nowhere else), `CONTEXT.md` (task routing / stage map), `README.md`.
+- `00-control/` — `MASTER-SPEC.md`, `STATE.md` (live inventory), `DECISIONS.md`
+  (append-only log), `EXPANSION-HANDOFF.md` (full roadmap), `PATH-TO-SHIP.md`
+  (prototype → product), handoffs, this file.
 - `app/src/knowledge-model/` — `schema.ts` (**frozen v1.0.0**, 10 entity types),
   `model.ts` (validate/export/import), `merge.ts`, `capture.ts` (direct entry).
 - `app/src/interview/` — `engine.ts` (rule-based, 8 tracks/50 areas),

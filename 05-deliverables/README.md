@@ -15,8 +15,8 @@ Generated fixture package: 07-testing/stage6-package/
 6. Institutional Memory Archive - history, scar tissue, commitments/handshakes
 7. Continuity & Emergency Brief - what breaks first, single points of failure,
    who to call, relationships, systems and where access lives (never credentials)
-8. Knowledge Risk Report - full risk record + open questions (numeric scoring
-   arrives Stage 7)
+8. Knowledge Risk Report - full risk record + open questions, with the
+   published Stage 7 scoring formula (04-model-views/README.md)
 9. AI-Ready Knowledge Export - the lossless model JSON
 
 ## Integrity mechanism

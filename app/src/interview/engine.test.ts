@@ -3,6 +3,7 @@ import { RuleBasedEngine, detectUndefinedNames, trackById } from './engine';
 
 const TRACK_1 = trackById('track-1');
 import { createEmptyModel, validateModel } from '../knowledge-model/model';
+import { scoreRisk } from '../dashboard/metrics';
 
 /**
  * Stage 3 acceptance: a scripted 10-answer session on Track 1 must produce
@@ -154,5 +155,65 @@ describe('Stage 3 acceptance: Track 1 rule-based interview', () => {
     expect(q.question).toContain('say a little more');
     // Verbatim fact still captured, nothing invented:
     expect(model.entities.facts[0].statement).toBe('Same thing every day.');
+  });
+});
+
+/**
+ * P5 (2026-07-16). Track 7 is titled "Risks & Fragilities" and asked six
+ * questions about risk - and no answer to any of them ever became a
+ * RiskEntity. The Risk Report saw only regex-detected "only I do that" risks.
+ * Now a substantive Track 7 answer is recorded as an owner-declared risk:
+ * verbatim, source 'interview' (the owner said it), high confidence,
+ * unverified. See DECISIONS.md 2026-07-16.
+ */
+describe('P5: Track 7 answers become owner-declared risks', () => {
+  const setup = () => {
+    const engine = new RuleBasedEngine();
+    return {
+      engine,
+      memory: engine.createMemory(),
+      model: createEmptyModel('p5', { businessName: 'B', ownerName: 'O' }),
+    };
+  };
+
+  it('records a substantive answer as a risk, verbatim, owner-sourced', () => {
+    const { engine, memory, model } = setup();
+    const answer = 'Losing the aerospace pricing knowledge worries me the most because it lives in one head.';
+    const r = engine.ingestAnswer(memory, model, 's1', 'track-7', answer);
+    expect(r.extracted.risks).toBe(1);
+    const risk = r.model.entities.risks[0];
+    expect(risk.description).toBe(answer);          // verbatim, not paraphrased
+    expect(risk.sources[0].kind).toBe('interview'); // owner-declared, not inferred
+    expect(risk.confidence).toBe('high');
+    expect(risk.verified).toBe(false);
+    expect(risk.riskKind).toBe('owner concern');    // track-7 area 1 is keeps-up
+  });
+
+  it('a dismissal is an answer, not a risk', () => {
+    const { engine, memory, model } = setup();
+    const r = engine.ingestAnswer(memory, model, 's1', 'track-7', 'Nothing really keeps me up these days.');
+    expect(r.extracted.risks).toBe(0);
+    expect(r.extracted.facts).toBe(1); // still captured verbatim as a fact
+  });
+
+  it('an answer outside a risk area creates no risk', () => {
+    const { engine, memory, model } = setup();
+    const r = engine.ingestAnswer(memory, model, 's1', 'track-1',
+      'I open the shop at six and walk the floor before anyone arrives.');
+    expect(r.extracted.risks).toBe(0);
+  });
+
+  it('owner-declared risks finally give the scoring some spread', () => {
+    const { engine, memory, model } = setup();
+    // keeps-up: owner concern -> 40 + 20 (no mitigation) + 10 (unverified) + 5 (high) = 75
+    let r = engine.ingestAnswer(memory, model, 's1', 'track-7',
+      'Cash gets thin every winter and we ride the line of credit harder than anyone knows.');
+    // single-points + "only I" phrasing -> the inferred SPOF risk (95) alongside
+    // the owner-declared single point of failure risk (100).
+    r = engine.ingestAnswer(r.memory, r.model, 's1', 'track-7',
+      'Only I know how to quote the aerospace work, and everything depends on the one CNC.');
+    const scores = r.model.entities.risks.map((k) => scoreRisk(k).score).sort((a, b) => a - b);
+    expect(new Set(scores).size).toBeGreaterThan(1); // no longer one flat number
+    expect(scores).toContain(75);
   });
 });

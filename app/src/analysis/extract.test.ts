@@ -52,9 +52,13 @@ describe('Stage 5 acceptance: document analysis', () => {
     const lines = VENDOR_LIST.split('\n');
     for (const f of docFacts) expect(lines).toContain(f.statement);
     expect(docFacts[1].sources[0].detail).toBe('vendor-list.txt, line 2');
-    // "Ed" / "Kowalski" style names surfaced as gaps:
+    // A person mentioned without introduction surfaces as ONE gap for the whole
+    // name - not one per word (see engine.detectUndefinedNames).
     expect(result.report.nameGaps).toBeGreaterThan(0);
-    expect(result.model.entities.gaps.some((g) => g.question.includes('"Ed"') || g.question.includes('"Kowalski"'))).toBe(true);
+    const questions = result.model.entities.gaps.map((g) => g.question);
+    expect(questions).toContain('Who or what is "Ed Kowalski"?');
+    expect(questions).not.toContain('Who or what is "Ed"?');
+    expect(questions).not.toContain('Who or what is "Kowalski"?');
     expect(validateModel(result.model)).toEqual([]);
     expect(entityCount(result.model)).toBeGreaterThan(before);
   });
@@ -149,5 +153,61 @@ describe('Stage 5 acceptance: document analysis', () => {
     const result = analyzeDocument(model, knownNames, { id: 'd2', name: 'big.txt', addedAt: 'now', text: big });
     expect(result.report.factsAdded).toBe(500);
     expect(result.report.linesSkipped).toBe(20);
+  });
+});
+
+/**
+ * P4 regression (2026-07-16). The vendor list above used to raise ELEVEN name
+ * gaps, including "Who or what is Machine?", "Tool", "Brothers", "Supply" and
+ * "FIXTURE" - the detector split the business's own name into three separate
+ * mysteries and treated a label as a person. See 07-testing/stage5-acceptance.md
+ * for the original output and DECISIONS.md 2026-07-16.
+ */
+describe('P4: name-gap noise on documents', () => {
+  const doc = { id: 'doc_vendors', name: 'vendor-list.txt', addedAt: 'now', text: VENDOR_LIST };
+
+  it('never asks about the business\'s own name, or an ALL-CAPS label', () => {
+    const { model, knownNames } = seededModel();
+    const questions = analyzeDocument(model, knownNames, doc)
+      .model.entities.gaps.map((g) => g.question);
+    for (const noise of ['Machine', 'Tool', 'Hartwell', 'Hartwell Machine', 'FIXTURE']) {
+      expect(questions).not.toContain(`Who or what is "${noise}"?`);
+    }
+  });
+
+  it('groups a multi-word vendor into one question, not one per word', () => {
+    const { model, knownNames } = seededModel();
+    const questions = analyzeDocument(model, knownNames, doc)
+      .model.entities.gaps.map((g) => g.question);
+    expect(questions).toContain('Who or what is "Valley Brothers Supply"?');
+    for (const word of ['Valley', 'Brothers', 'Supply']) {
+      expect(questions).not.toContain(`Who or what is "${word}"?`);
+    }
+  });
+
+  it('raises far fewer gaps than the per-word detector did (was 11)', () => {
+    const { model, knownNames } = seededModel();
+    const { report } = analyzeDocument(model, knownNames, doc);
+    // Valley Brothers Supply, Ed Kowalski, Precision Carbide - and nothing else.
+    expect(report.nameGaps).toBe(3);
+    expect(report.nameGapsSuppressed).toBe(0);
+  });
+
+  it('caps name gaps per document and reports the suppressed count', () => {
+    const { model, knownNames } = seededModel();
+    // A price sheet is nothing but proper nouns - the flood case.
+    // Names must differ in LETTERS: digits are stripped before matching, so
+    // "Widget1"/"Widget2" would collapse to one name and never reach the cap.
+    const lines: string[] = [];
+    for (let i = 0; i < 40; i++) {
+      const suffix = String.fromCharCode(65 + (i % 26)) + String.fromCharCode(97 + Math.floor(i / 26));
+      lines.push(`Item: Acme Widget${suffix} Corp, net 30`);
+    }
+    const flood = { id: 'doc_flood', name: 'price-sheet.txt', addedAt: 'now', text: lines.join('\n') };
+    const { report, model: after } = analyzeDocument(model, knownNames, flood);
+    expect(report.nameGaps).toBe(25);            // MAX_NAME_GAPS
+    expect(report.nameGapsSuppressed).toBe(15);  // 40 - 25, counted not silent
+    expect(report.factsAdded).toBe(40);          // every line still captured
+    expect(validateModel(after)).toEqual([]);
   });
 });
