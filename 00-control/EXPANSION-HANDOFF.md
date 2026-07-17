@@ -162,7 +162,7 @@ answer costs an order of magnitude more.
 Items marked **DONE** are kept for continuity — the original roadmap sent a
 later session to redo them. Do not rebuild them.
 
-**A. The LLM adapter — ARCHIVED 2026-07-16, deferred not rejected.** PR #3 is
+**A. The LLM adapter — REVIVED BY PORT 2026-07-17 (feature/assisted-interviewing), pending the owner's live run.** The guidance below is the historical record of the archive decision. PR #3 is
 closed; the branch `feature/llm-interview-adapter` is retained on origin as the
 archive (do not delete it). Owner's decision: run the first service pilot
 structuring **by hand**, and revive the adapter if that labor proves to be the
@@ -188,7 +188,7 @@ adaptive interview the original master prompt promised.
 editable item-by-item via `addListItem`/`editListItem`/`removeListItem`. Steps
 renumber 1..n; removal is owner-directed item correction, the only removal.
 
-**C. Wire LLM question generation into the UI.** `LlmInterviewEngine.nextQuestion`
+**C. ~~Wire LLM question generation into the UI~~ — CLOSED 2026-07-17: dropped deliberately with the port; the operator reads questions aloud in the service model, so rewording buys nothing (DECISIONS.md).** `LlmInterviewEngine.nextQuestion`
 already rewords the rule-chosen question, but the interview screen still shows
 the deterministic text. Surface the reworded question (async, loading state).
 **Only after A is verified** — it depends on the live path working.

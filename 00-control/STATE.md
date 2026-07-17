@@ -220,3 +220,12 @@ Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
 - Spec amendment 2026-07-10: builder proceeds automatically between stages.
 - Stage 2: complete 2026-07-10 under the amendment; gate report delivered
   with the Stage 2/3 zip for after-the-fact audit.
+
+2026-07-17 (feature/assisted-interviewing branch): archived PR #3 revived by
+PORT (never merged): AssistedExtraction enrichment layer in llm.ts - floor
+saved before any network call, drafts across all 7 non-interview entity types
+(inferred/low/unverified), clarification flags (max 3/answer) queued as
+follow-up threads, memory-only key with home-screen panel, guarded live test
+(llm.live.test.ts - owner runs with his key). Question rewording dropped
+deliberately (operator reads questions aloud). Suite 154 -> 166 + 1 guarded
+live. Remaining: the owner's live run, then merge.
