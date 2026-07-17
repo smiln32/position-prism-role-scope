@@ -417,11 +417,21 @@ function NewProjectScreen({ store, go }: { store: ProjectStore; go: (s: Screen) 
   const [industry, setIndustry] = useState('');
   const [employeeCount, setEmployeeCount] = useState('');
   const [exitWindow, setExitWindow] = useState('');
+  // What this project documents: the owner's own knowledge, or one specific
+  // job - interviewed role-holder-first (DECISIONS.md 2026-07-17). The role
+  // title becomes the model's subjectRole; the person interviewed is named in
+  // session labels and source details, never in the model's identity.
+  const [subject, setSubject] = useState<'owner' | 'role'>('owner');
+  const [roleTitle, setRoleTitle] = useState('');
   const [error, setError] = useState('');
 
   const create = () => {
     if (!businessName.trim() || !ownerName.trim()) {
-      setError('The business name and your name are the only two things we need to begin.');
+      setError('The business name and the owner\'s name are the only two things we need to begin.');
+      return;
+    }
+    if (subject === 'role' && !roleTitle.trim()) {
+      setError('Name the role this project documents - "Bookkeeper", "Shop foreman", "Office manager".');
       return;
     }
     const project: ProjectFile = {
@@ -432,7 +442,7 @@ function NewProjectScreen({ store, go }: { store: ProjectStore; go: (s: Screen) 
         industry: industry.trim() || undefined,
         employeeCount: employeeCount.trim() || undefined,
         plannedExitWindow: exitWindow.trim() || undefined,
-      }),
+      }, subject === 'role' ? roleTitle.trim() : 'owner'),
       sessions: [],
     };
     store.save(project);
@@ -454,9 +464,39 @@ function NewProjectScreen({ store, go }: { store: ProjectStore; go: (s: Screen) 
         <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
       </label>
       <label className="field">
-        <span>Your name</span>
+        <span>The owner&apos;s name</span>
         <input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
       </label>
+
+      <div className="field">
+        <span>What is this project about?</span>
+        <label className="small" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+          <input type="radio" name="subject" checked={subject === 'owner'}
+            onChange={() => setSubject('owner')} />
+          The owner&apos;s own knowledge - the full succession interview
+        </label>
+        <label className="small" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+          <input type="radio" name="subject" checked={subject === 'role'}
+            onChange={() => setSubject('role')} />
+          One specific job, answered by the person who does it
+        </label>
+      </div>
+      {subject === 'role' && (
+        <>
+          <label className="field">
+            <span>The role this project documents</span>
+            <input type="text" value={roleTitle} placeholder='e.g. "Bookkeeper"'
+              onChange={(e) => setRoleTitle(e.target.value)} />
+          </label>
+          <p className="why">
+            Why the person, not the owner: whoever does the job every day knows
+            it best - the workarounds, the judgment calls, what the written
+            procedures get wrong. Interview them; the owner fills gaps and
+            confirms afterward. This project documents the role itself, so the
+            knowledge stays useful even after the person moves on.
+          </p>
+        </>
+      )}
       <label className="field">
         <span>What the business does <span className="muted">(optional)</span></span>
         <input type="text" value={industry} onChange={(e) => setIndustry(e.target.value)} />

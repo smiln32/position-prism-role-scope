@@ -18,7 +18,7 @@ describe('App shell (smoke)', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Start a new project' }));
     fireEvent.change(screen.getByLabelText('Business name'), { target: { value: 'Hartwell Machine (FIXTURE)' } });
-    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Ray (fictional)' } });
+    fireEvent.change(screen.getByLabelText("The owner's name"), { target: { value: 'Ray (fictional)' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
 
     // The project screen shows the business name and the new knowledge entry point.

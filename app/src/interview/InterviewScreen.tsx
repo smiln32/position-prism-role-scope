@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RuleBasedEngine, TRACKS, trackById } from './engine';
+import { RuleBasedEngine, trackSetFor, trackById } from './engine';
 import type { ProjectFile, SessionMeta } from '../project/store';
 
 export default function InterviewScreen({
@@ -26,18 +26,27 @@ export default function InterviewScreen({
     window.scrollTo(0, 0);
   }, [trackId]);
 
+  const tracks = trackSetFor(project.model.subjectRole);
+  const isOwner = project.model.subjectRole === 'owner';
+
   if (!trackId) {
     return (
       <section>
         <button className="quiet" onClick={onBack}>← Back to sessions</button>
         <h1 style={{ marginTop: '1rem' }}>Choose a part of the interview</h1>
         <p className="why">
-          Why parts: the interview covers eight parts of how you run the
-          business. Do them in any order, one sitting at a time. Anything
-          left unanswered is remembered and asked again later - nothing
-          gets lost between sittings.
+          {isOwner
+            ? 'Why parts: the interview covers eight parts of how you run the ' +
+              'business. Do them in any order, one sitting at a time. Anything ' +
+              'left unanswered is remembered and asked again later - nothing ' +
+              'gets lost between sittings.'
+            : 'Why parts: the interview covers seven parts of how this job ' +
+              'really works, answered by the person who does it. Do them in ' +
+              'any order, one sitting at a time. Anything left unanswered is ' +
+              'remembered and asked again later - nothing gets lost between ' +
+              'sittings.'}
         </p>
-        {TRACKS.map((t) => {
+        {tracks.map((t) => {
           const c = engine.coverage(memory, t.id);
           const threads = memory.pendingThreads.filter((f) => f.trackId === t.id).length;
           return (
@@ -67,7 +76,7 @@ export default function InterviewScreen({
   }
 
   const track = trackById(trackId);
-  const q = engine.nextQuestion(memory, trackId);
+  const q = engine.nextQuestion(memory, trackId, project.model.subjectRole);
   const questionText = revisitAreaId ? engine.revisitQuestion(trackId, revisitAreaId) : q.question;
   const showInput = revisitAreaId !== null || q.areaId !== 'done';
 

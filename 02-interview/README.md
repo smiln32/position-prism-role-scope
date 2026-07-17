@@ -9,7 +9,13 @@ An LLM-backed adapter (Anthropic API, Haiku-class, user-supplied key)
 may be added later behind the same interface - deferred per
 DECISIONS.md 2026-07-10.
 
-## The eight tracks
+## The eight tracks (owner) and seven role tracks
+
+Since 2026-07-17 (DECISIONS.md): a model whose subjectRole is a role title
+("Bookkeeper") uses ROLE_TRACKS - 7 tracks / 44 areas addressed to the
+person who does the job, interviewed role-holder-first; the owner is the
+fallback source and the verifier. trackSetFor(subjectRole) selects the set.
+The original eight below apply when subjectRole is "owner".
 
 All question text lives in TRACKS in engine.ts (single source of truth):
 1. The Business As It Really Runs (8 areas)

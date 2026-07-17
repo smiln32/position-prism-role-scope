@@ -1,6 +1,6 @@
 import type { KnowledgeModel, RiskEntity, EntityBase } from '../knowledge-model/schema';
 import { COLLECTION_KEYS } from '../knowledge-model/schema';
-import { TRACKS } from '../interview/engine';
+import { trackSetFor } from '../interview/engine';
 import type { ProjectFile } from '../project/store';
 
 /**
@@ -70,7 +70,7 @@ export function computeMetrics(project: ProjectFile, now: Date = new Date()): Me
   const model = project.model;
   const memory = project.interviewMemory;
 
-  const perTrack = TRACKS.map((t) => ({
+  const perTrack = trackSetFor(model.subjectRole).map((t) => ({
     trackId: t.id,
     title: t.title,
     covered: memory?.trackProgress[t.id]?.answeredAreas.length ?? 0,

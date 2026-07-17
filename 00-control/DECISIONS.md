@@ -753,3 +753,31 @@ top, every extraction 'inferred'/low/unverified. BOTH BRANCHES ARE RETAINED
 on origin as the archive - closing a PR deletes nothing; do not delete
 feature/llm-interview-adapter. This also finally gives #3 the explicit
 status the decision log never had (flagged in the 2026-07-16 audit). | Done.
+
+2026-07-17 | Role-level interviews, role-holder first (Claude Code, owner-
+directed) | Owner's principle, verbatim: "Each person in a role should be
+interviewed and the business owner only as a fallback. Who knows the actual
+job better, right?" This inverts the build's owner-centric assumption and
+activates the subjectRole seam that has sat inert since Stage 1. Design:
+(a) ROLE_TRACKS - 7 tracks / 44 areas addressed to the person who DOES the
+job (the job as it really is; how the work gets done; people & handoffs;
+judgment calls; problems & fixes with riskKind areas mirroring track-7;
+history & quirks; handing it off). trackSetFor(subjectRole) selects the set;
+'owner' keeps the original eight untouched. (b) NO SCHEMA CHANGE: subjectRole
+(existing free-text field) carries the role title; the interviewee's NAME is
+attribution (session labels, SourceRef.detail), never identity - the model
+documents the ROLE, per the product's original boundary ("an employee may
+leave, but the knowledge associated with the role should remain"). A
+subjectName field on the frozen profile was considered and rejected as
+unnecessary unfreezing. (c) Engine methods take an optional subjectRole
+(default 'owner' - all existing call sites and behaviour unchanged);
+completion, coverage, metrics and the handbook/summary renderers judge
+against the active set. (d) NewProjectScreen asks what the project is about
+(owner's knowledge vs one specific job + role title) with role-holder-first
+"why we ask" copy; "Your name" label became "The owner's name" since the
+typist may be the operator. KNOWN INTERIM LIMITATION, logged not hidden: the
+owner-specific deliverables (First Year Without the Founder, and the
+track-5/6/8 quote sections of Decision Playbook / Memory Archive / Emergency
+Brief) reference owner track ids, so for role projects those sections render
+"not asked" - honest but thin. A role-appropriate deliverable set is the
+follow-up (with the PDF work), not a silent gap. 131 -> 136 tests. | Done.

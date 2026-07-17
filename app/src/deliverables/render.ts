@@ -2,7 +2,7 @@ import type {
   KnowledgeModel, FactEntity, EntityBase,
 } from '../knowledge-model/schema';
 import { exportModel } from '../knowledge-model/model';
-import { TRACKS } from '../interview/engine';
+import { trackSetFor } from '../interview/engine';
 import { scoreRisk, SCORING_EXPLANATION } from '../dashboard/metrics';
 import type { ProjectFile } from '../project/store';
 
@@ -118,7 +118,7 @@ function executiveSummary(doc: Doc, project: ProjectFile): void {
 
   doc.h2('Interview coverage');
   const mem = project.interviewMemory;
-  for (const t of TRACKS) {
+  for (const t of trackSetFor(m.subjectRole)) {
     const covered = mem?.trackProgress[t.id]?.answeredAreas.length ?? 0;
     doc.bullet(`${t.title}: ${covered} of ${t.areas.length} areas covered`);
   }
@@ -135,7 +135,7 @@ function executiveSummary(doc: Doc, project: ProjectFile): void {
 function handbook(doc: Doc, project: ProjectFile): void {
   const m = project.model;
   doc.p('Everything below is in the owner\'s own words, organized by the part of the business it describes.');
-  for (const t of TRACKS) {
+  for (const t of trackSetFor(m.subjectRole)) {
     const facts = topicFacts(m, t.id);
     doc.h2(t.title);
     if (facts.length === 0) {

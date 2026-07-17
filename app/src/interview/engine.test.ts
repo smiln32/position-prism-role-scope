@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { RuleBasedEngine, detectUndefinedNames, trackById } from './engine';
+import { RuleBasedEngine, detectUndefinedNames, trackById, trackSetFor, TRACKS, ROLE_TRACKS } from './engine';
 
 const TRACK_1 = trackById('track-1');
 import { createEmptyModel, validateModel } from '../knowledge-model/model';
@@ -215,5 +215,79 @@ describe('P5: Track 7 answers become owner-declared risks', () => {
     const scores = r.model.entities.risks.map((k) => scoreRisk(k).score).sort((a, b) => a - b);
     expect(new Set(scores).size).toBeGreaterThan(1); // no longer one flat number
     expect(scores).toContain(75);
+  });
+});
+
+/**
+ * Role-level interviews (2026-07-17). Owner's principle: "Each person in a
+ * role should be interviewed and the business owner only as a fallback. Who
+ * knows the actual job better?" A model whose subjectRole is a role title
+ * uses ROLE_TRACKS; 'owner' keeps the original eight. See DECISIONS.md.
+ */
+describe('Role-level interviews', () => {
+  const roleModel = () => {
+    const m = createEmptyModel('role-test', { businessName: 'B', ownerName: 'O' }, 'Bookkeeper');
+    return m;
+  };
+
+  it('subjectRole selects the track set; owner is unchanged', () => {
+    expect(trackSetFor('owner')).toBe(TRACKS);
+    expect(trackSetFor('Bookkeeper')).toBe(ROLE_TRACKS);
+    expect(roleModel().subjectRole).toBe('Bookkeeper');
+    expect(createEmptyModel('x', { businessName: 'B', ownerName: 'O' }).subjectRole).toBe('owner');
+  });
+
+  it('role tracks: 7 tracks, 44 areas, ids distinct from owner tracks', () => {
+    expect(ROLE_TRACKS.length).toBe(7);
+    expect(ROLE_TRACKS.reduce((n, t) => n + t.areas.length, 0)).toBe(44);
+    const ownerIds = new Set(TRACKS.map((t) => t.id));
+    for (const t of ROLE_TRACKS) expect(ownerIds.has(t.id)).toBe(false);
+  });
+
+  it('a role interview runs end to end on role tracks', () => {
+    const engine = new RuleBasedEngine();
+    const memory = engine.createMemory();
+    const model = roleModel();
+    const q = engine.nextQuestion(memory, 'role-1', model.subjectRole);
+    expect(q.question).toContain('normal working day in this job');
+    const r = engine.ingestAnswer(memory, model, 's1', 'role-1',
+      'First thing I reconcile the bank feed, then I run the aging report before anyone asks for it.');
+    expect(r.extracted.facts).toBe(1);
+    expect(r.model.entities.facts[0].topic).toBe('role-1:daily');
+  });
+
+  it('completion is judged against the ROLE set for a role subject', () => {
+    const engine = new RuleBasedEngine();
+    let memory = engine.createMemory();
+    let model = roleModel();
+    // Answer every area of every role track (12+ words, no risk phrasing).
+    for (const t of ROLE_TRACKS) {
+      for (let i = 0; i < t.areas.length; i++) {
+        const r = engine.ingestAnswer(memory, model, 's1', t.id,
+          'That part of the job is steady and shared, the whole team handles it together without drama every single time.');
+        memory = r.memory; model = r.model;
+      }
+    }
+    // Drain any queued follow-up threads the same way.
+    let guard = 0;
+    while (memory.pendingThreads.length > 0 && guard++ < 50) {
+      const r = engine.ingestAnswer(memory, model, 's1', memory.pendingThreads[0].trackId,
+        'Nothing more to add on that one, it is genuinely covered by several people already.');
+      memory = r.memory; model = r.model;
+    }
+    expect(engine.allComplete(memory, model.subjectRole)).toBe(true);
+    // The same memory is NOT complete by the owner's yardstick (50 areas).
+    expect(engine.allComplete(memory, 'owner')).toBe(false);
+  });
+
+  it('role-5 risk areas produce owner-declared risks like track-7 does', () => {
+    const engine = new RuleBasedEngine();
+    const memory = engine.createMemory();
+    const model = roleModel();
+    const r = engine.ingestAnswer(memory, model, 's1', 'role-5',
+      'The month-end close breaks whenever the freight invoices come in late and I rebuild the sheet by hand.');
+    expect(r.extracted.risks).toBe(1);
+    expect(r.model.entities.risks[0].riskKind).toBe('recurring problem');
+    expect(r.model.entities.risks[0].sources[0].kind).toBe('interview');
   });
 });
