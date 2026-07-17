@@ -4,9 +4,10 @@ import type { ProjectFile } from '../project/store';
 import {
   addRelationship, addDecision, addProcess, addJudgment,
   addHistory, addSystem, addCommitment, patchEntity, setVerified,
-  addListItem, editListItem, removeListItem, listFieldValues,
+  addListItem, editListItem, removeListItem, listFieldValues, OWNER,
   type RelationshipInput, type DecisionInput, type ProcessInput, type JudgmentInput,
   type HistoryInput, type SystemInput, type CommitmentInput,
+  type Attribution, type EnteredBy,
 } from './capture';
 
 /**
@@ -28,7 +29,7 @@ interface TypeDef {
   heading: string;
   blurb: string;
   addLabel?: string;
-  add?: (m: KnowledgeModel, input: Record<string, unknown>) => KnowledgeModel;
+  add?: (m: KnowledgeModel, input: Record<string, unknown>, by: Attribution) => KnowledgeModel;
   fields: FieldDef[];
   title: (e: AnyEntity) => string;
 }
@@ -50,7 +51,7 @@ const TYPES: TypeDef[] = [
   {
     key: 'relationships', heading: 'People & organizations',
     blurb: 'Customers, vendors, the banker, the landlord, key employees, advisors - who they are and what the relationship rests on.',
-    addLabel: 'Add a relationship', add: (m, i) => addRelationship(m, i as unknown as RelationshipInput),
+    addLabel: 'Add a relationship', add: (m, i, by) => addRelationship(m, i as unknown as RelationshipInput, by),
     title: (e) => (e as { who: string }).who,
     fields: [
       { name: 'who', label: 'Who', type: 'text' },
@@ -65,7 +66,7 @@ const TYPES: TypeDef[] = [
   {
     key: 'processes', heading: 'How things get done',
     blurb: 'The recurring work that keeps the place running - and who else knows how.',
-    addLabel: 'Add a process', add: (m, i) => addProcess(m, i as unknown as ProcessInput),
+    addLabel: 'Add a process', add: (m, i, by) => addProcess(m, i as unknown as ProcessInput, by),
     title: (e) => (e as { name: string }).name,
     fields: [
       { name: 'name', label: 'Name', type: 'text' },
@@ -78,7 +79,7 @@ const TYPES: TypeDef[] = [
   {
     key: 'decisions', heading: 'Decisions & judgment',
     blurb: 'Recurring decisions - how they really get made, and the thresholds where the answer changes.',
-    addLabel: 'Add a decision', add: (m, i) => addDecision(m, i as unknown as DecisionInput),
+    addLabel: 'Add a decision', add: (m, i, by) => addDecision(m, i as unknown as DecisionInput, by),
     title: (e) => (e as { name: string }).name,
     fields: [
       { name: 'name', label: 'Decision', type: 'text' },
@@ -90,7 +91,7 @@ const TYPES: TypeDef[] = [
   {
     key: 'judgments', heading: 'Instincts & rules of thumb',
     blurb: 'The tacit layer - "when a customer does X, it means Y."',
-    addLabel: 'Add a judgment call', add: (m, i) => addJudgment(m, i as unknown as JudgmentInput),
+    addLabel: 'Add a judgment call', add: (m, i, by) => addJudgment(m, i as unknown as JudgmentInput, by),
     title: (e) => (e as { heuristic: string }).heuristic,
     fields: [
       { name: 'heuristic', label: 'The rule of thumb', type: 'textarea' },
@@ -100,7 +101,7 @@ const TYPES: TypeDef[] = [
   {
     key: 'history', heading: 'History & scar tissue',
     blurb: 'What was tried, what failed, and why things are the way they are.',
-    addLabel: 'Add a piece of history', add: (m, i) => addHistory(m, i as unknown as HistoryInput),
+    addLabel: 'Add a piece of history', add: (m, i, by) => addHistory(m, i as unknown as HistoryInput, by),
     title: (e) => (e as { whatHappened: string }).whatHappened,
     fields: [
       { name: 'whatHappened', label: 'What happened', type: 'textarea' },
@@ -111,7 +112,7 @@ const TYPES: TypeDef[] = [
   {
     key: 'systems', heading: 'Systems & access',
     blurb: 'Software, accounts, equipment - what each does and who holds access. Never passwords.',
-    addLabel: 'Add a system', add: (m, i) => addSystem(m, i as unknown as SystemInput),
+    addLabel: 'Add a system', add: (m, i, by) => addSystem(m, i as unknown as SystemInput, by),
     title: (e) => (e as { name: string }).name,
     fields: [
       { name: 'name', label: 'Name', type: 'text' },
@@ -123,7 +124,7 @@ const TYPES: TypeDef[] = [
   {
     key: 'commitments', heading: 'Commitments & handshakes',
     blurb: 'Informal promises and verbal arrangements a successor could step on without knowing.',
-    addLabel: 'Add a commitment', add: (m, i) => addCommitment(m, i as unknown as CommitmentInput),
+    addLabel: 'Add a commitment', add: (m, i, by) => addCommitment(m, i as unknown as CommitmentInput, by),
     title: (e) => (e as { withWhom: string }).withWhom,
     fields: [
       { name: 'withWhom', label: 'With whom', type: 'text' },
@@ -312,10 +313,52 @@ function EntityCard({ type, entity, model, onSave }: {
   );
 }
 
+/**
+ * Who is at the keyboard. The owner speaking for their own business is a
+ * different kind of source from an advisor writing up what they heard, and the
+ * record has to say which. Memory-only for the sitting: the choice travels into
+ * each entity's SourceRef, which is where it belongs and where it persists.
+ */
+function WhoIsEntering({ by, onChange }: {
+  by: Attribution; onChange: (next: Attribution) => void;
+}) {
+  const set = (enteredBy: EnteredBy) => onChange({ ...by, enteredBy });
+  return (
+    <div className="card" style={{ borderStyle: 'dashed', marginTop: '1rem' }}>
+      <span className="small"><strong>Who is entering this?</strong></span>
+      <div className="row" style={{ gap: '1rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+        {(['owner', 'operator'] as EnteredBy[]).map((v) => (
+          <label key={v} className="small" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <input type="radio" name="entered-by" checked={by.enteredBy === v}
+              onChange={() => set(v)} />
+            {v === 'owner' ? 'The owner, in their own words' : 'Someone else, writing up what the owner said'}
+          </label>
+        ))}
+      </div>
+      {by.enteredBy === 'operator' && (
+        <div style={{ marginTop: '0.5rem' }}>
+          <label className="field">
+            <span>Your name (recorded as the source)</span>
+            <input type="text" value={by.operatorName ?? ''}
+              placeholder="e.g. J. Smith"
+              onChange={(e) => onChange({ ...by, operatorName: e.target.value })} />
+          </label>
+          <p className="why" style={{ marginTop: '0.35rem' }}>
+            Anything you add is recorded as your interpretation, not the owner's
+            own words, and is marked <em>needs verification</em> until the owner
+            confirms it. The owner's verbatim answers are never changed.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function KnowledgeScreen({ project, onSave, onBack }: {
   project: ProjectFile; onSave: (next: ProjectFile) => void; onBack: () => void;
 }) {
   const save = (nextModel: KnowledgeModel) => onSave({ ...project, model: nextModel });
+  const [by, setBy] = useState<Attribution>(OWNER);
 
   return (
     <section>
@@ -328,6 +371,8 @@ export default function KnowledgeScreen({ project, onSave, onBack }: {
         here - nothing is invented.
       </p>
 
+      <WhoIsEntering by={by} onChange={setBy} />
+
       {TYPES.map((t) => {
         const items = project.model.entities[t.key] as AnyEntity[];
         return (
@@ -338,7 +383,7 @@ export default function KnowledgeScreen({ project, onSave, onBack }: {
             {items.map((e) => (
               <EntityCard key={e.id} type={t} entity={e} model={project.model} onSave={save} />
             ))}
-            {t.add && <AddForm type={t} onAdd={(input) => save(t.add!(project.model, input))} />}
+            {t.add && <AddForm type={t} onAdd={(input) => save(t.add!(project.model, input, by))} />}
           </div>
         );
       })}

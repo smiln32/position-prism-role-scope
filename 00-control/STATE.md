@@ -21,6 +21,30 @@ handoff PR #8 is stale (see HANDOFF-2026-07-15.md).
   Platform.txt" and "Succession-description.txt" were deleted at owner request;
   the .md (superset) remains.
 - Docs only. No app/ source touched. 106 tests still pass, 14 files.
+
+2026-07-16 (defect-fix session, branch fix/provenance-and-extraction-defects):
+Three defects found by reading the source end to end against the owner's
+decision to run Successor as a SERVICE (he interviews, he delivers reports, the
+company keeps its data). Test suite 106 -> 124. Frozen schema untouched.
+- P1 PROVENANCE (the important one): capture.ts claimed "Entered directly by the
+  owner" + verified=true for everything it created. In a service engagement the
+  OPERATOR types the structure, so that was a false attribution in the field the
+  product rests on. capture.ts now takes an Attribution ({enteredBy}), defaulting
+  to OWNER so nothing existing changed; 'operator' entries are 'inferred' /
+  medium / UNVERIFIED and name who structured them and from which fact.
+  KnowledgeScreen has a "Who is entering this?" control. This makes the existing
+  setVerified() promotion path meaningful for the first time.
+- P3 THE MAY BUG: the First Year calendar filed every "we may need to..." under
+  May (case-insensitive substring on month names). Now word-boundary, and
+  case-sensitive for March/May/August.
+- P4 NAME-GAP NOISE: a 4-line vendor list raised 11 gaps ("Who or what is
+  Machine?"). Now: business/owner names are known, consecutive capitals group
+  into one name, ALL-CAPS labels are ignored, and gaps are capped at 25/document
+  with the overflow reported. Same fixture: 11 -> 3 gaps.
+Next, agreed with the owner: P2 (the rule-based ceiling - interviews write only
+3 of 10 entity types) and P5 (flat risk scores; Track 7 "Risks & Fragilities"
+produces no RiskEntity at all). Then P6/P7. Deferred: PR #3's staleness, the
+org rollup, and README.md:159's claim that the AI adapter exists.
 Next stage: none in the staged build. The path from prototype to shippable
 product is now tracked in PATH-TO-SHIP.md (three owner decisions + Tiers 1-4).
 Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.

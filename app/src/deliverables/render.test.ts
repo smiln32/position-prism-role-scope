@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   DELIVERABLES, renderPackage, renderDeliverable, auditRendered,
-  DISCLAIMER, NOT_CAPTURED,
+  DISCLAIMER, NOT_CAPTURED, factsMentioningMonth,
 } from './render';
+import type { FactEntity } from '../knowledge-model/schema';
 import { fixtureModel } from '../knowledge-model/fixture';
 import { createEmptyModel } from '../knowledge-model/model';
 import { RuleBasedEngine } from '../interview/engine';
@@ -134,5 +135,46 @@ describe('Stage 6 acceptance: deliverable generation', () => {
     expect(byId['risk-report']).toContain('single point of failure');
     expect(byId['risk-report']).toContain('What is "the Meridian situation"');
     expect(byId['ai-export']).toContain('"schemaVersion": "1.0.0"');
+  });
+});
+
+/**
+ * P3 (2026-07-16). "First Year Without the Founder" filed facts onto the
+ * calendar with a case-insensitive substring match, so every statement
+ * containing the modal verb "may" landed under May. Three month names are also
+ * ordinary words; those are matched case-sensitively now.
+ * See DECISIONS.md 2026-07-16.
+ */
+describe('P3: month matching on the calendar', () => {
+  const fact = (statement: string): FactEntity => ({
+    id: 'fact_' + statement.slice(0, 6), type: 'fact', confidence: 'high',
+    sources: [{ kind: 'interview', capturedAt: '2026-01-01T00:00:00.000Z' }],
+    createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+    verified: false, statement,
+  });
+
+  it('does not file the modal verb "may" under May', () => {
+    const facts = [fact('We may need to order steel early if the mill is behind.')];
+    expect(factsMentioningMonth(facts, 'May')).toEqual([]);
+  });
+
+  it('still files a real May mention under May', () => {
+    const facts = [fact('The shop closes the last week of May every year.')];
+    expect(factsMentioningMonth(facts, 'May').length).toBe(1);
+  });
+
+  it('does not file "march" the verb, or "august" the adjective', () => {
+    expect(factsMentioningMonth([fact('Do not march into that negotiation cold.')], 'March')).toEqual([]);
+    expect(factsMentioningMonth([fact('It is an august old firm with deep pockets.')], 'August')).toEqual([]);
+    expect(factsMentioningMonth([fact('Inventory count happens in March.')], 'March').length).toBe(1);
+  });
+
+  it('unambiguous months stay case-insensitive', () => {
+    expect(factsMentioningMonth([fact('we shut down in january for two weeks')], 'January').length).toBe(1);
+  });
+
+  it('respects word boundaries', () => {
+    expect(factsMentioningMonth([fact('Our Mayfair account is the biggest.')], 'May')).toEqual([]);
+    expect(factsMentioningMonth([fact('The Augusta job runs long.')], 'August')).toEqual([]);
   });
 });

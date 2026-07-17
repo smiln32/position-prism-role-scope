@@ -1,6 +1,6 @@
 import type { KnowledgeModel, FactEntity, GapEntity } from '../knowledge-model/schema';
 import { newId } from '../knowledge-model/model';
-import { detectUndefinedNames } from '../interview/engine';
+import { detectUndefinedNames, profileNames } from '../interview/engine';
 
 /**
  * Document analysis - Stage 5. Rule-based (see DECISIONS.md rulings).
@@ -26,9 +26,21 @@ export interface AnalysisReport {
   nameGaps: number;
   conflicts: number;
   linesSkipped: number;
+  /** Name gaps past MAX_NAME_GAPS. Reported, never silent (see below). */
+  nameGapsSuppressed: number;
 }
 
 const MAX_LINES = 500;
+
+/**
+ * A ceiling on name questions per document. The detector is built for prose: a
+ * vendor list or a price sheet is nothing BUT proper nouns, so one upload could
+ * bury the dashboard's open questions under dozens of "Who or what is X?".
+ * Past this many, further names are counted and reported rather than raised -
+ * the same bargain MAX_LINES already makes. The facts themselves are never
+ * capped; nothing captured is lost, only the questions about it.
+ */
+const MAX_NAME_GAPS = 25;
 
 const MONTHS = [
   'january', 'february', 'march', 'april', 'may', 'june',
@@ -99,7 +111,9 @@ export function analyzeDocument(
   const names = [...knownNames];
   const report: AnalysisReport = {
     documentId: doc.id, factsAdded: 0, nameGaps: 0, conflicts: 0, linesSkipped: 0,
+    nameGapsSuppressed: 0,
   };
+  const known = profileNames(next);
 
   const interviewFacts = next.entities.facts.filter(
     (f) => f.sources.some((s) => s.kind === 'interview'),
@@ -121,8 +135,9 @@ export function analyzeDocument(
     next.entities.facts.push(fact);
     report.factsAdded++;
 
-    for (const name of detectUndefinedNames(line, names)) {
+    for (const name of detectUndefinedNames(line, [...names, ...known])) {
       names.push(name);
+      if (report.nameGaps >= MAX_NAME_GAPS) { report.nameGapsSuppressed++; continue; }
       next.entities.gaps.push({
         id: newId('gap'), type: 'gap', confidence: 'high',
         sources: [{ kind: 'inferred', detail: `Name "${name}" appears without introduction (${detail})`, capturedAt: now }],

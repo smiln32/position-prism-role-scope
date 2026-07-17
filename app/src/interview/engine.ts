@@ -179,21 +179,76 @@ function sentences(text: string): string[] {
   return text.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
 }
 
+/** True for a word that looks like part of a proper name. */
+function isNameWord(word: string): boolean {
+  if (!/^[A-Z][a-zA-Z']+$/.test(word)) return false;
+  // ALL-CAPS is a heading, a label, or an acronym - not someone to ask about.
+  // ("FIXTURE" in a test document raised "Who or what is FIXTURE?")
+  if (word === word.toUpperCase()) return false;
+  return !NAME_STOPLIST.has(word.replace(/'/g, ''));
+}
+
+/**
+ * Names mentioned without introduction, as whole names rather than words.
+ *
+ * Consecutive capitalized words are ONE name: "Carbide Supply Brothers" asks a
+ * single question, not three. The earlier per-word loop split every multi-word
+ * business into separate mysteries - a fixture vendor list raised eleven gaps
+ * including "Who or what is Machine?" and "Who or what is Tool?" from the
+ * business's own name (see 07-testing/stage5-acceptance.md).
+ *
+ * Still deliberately conservative: the first word of a sentence is capitalized
+ * by grammar, so it never starts a run.
+ */
 export function detectUndefinedNames(answer: string, known: string[]): string[] {
   const knownLower = new Set(known.map((k) => k.toLowerCase()));
   const found: string[] = [];
+
+  const consider = (run: string[]): void => {
+    if (run.length === 0) return;
+    const name = run.join(' ');
+    if (knownLower.has(name.toLowerCase())) return;
+    // A run of individually-known words is known: "Hartwell Machine" needs no
+    // introduction when Hartwell, Machine and Tool are all the business's own
+    // name. Punctuation ("&") splits such a run, so the whole-string check
+    // above cannot catch this on its own.
+    if (run.every((w) => knownLower.has(w.toLowerCase()))) return;
+    if (found.some((f) => f.toLowerCase() === name.toLowerCase())) return;
+    found.push(name);
+  };
+
   for (const s of sentences(answer)) {
+    let run: string[] = [];
     s.split(/\s+/).forEach((raw, idx) => {
       const word = raw.replace(/[^A-Za-z']/g, '');
-      if (idx === 0) return;
-      if (!/^[A-Z][a-zA-Z']+$/.test(word)) return;
-      if (NAME_STOPLIST.has(word.replace(/'/g, ''))) return;
-      if (knownLower.has(word.toLowerCase())) return;
-      if (found.some((f) => f.toLowerCase() === word.toLowerCase())) return;
-      found.push(word);
+      // idx 0 is capitalized by grammar; it can never open a run.
+      if (idx === 0 || !isNameWord(word)) { consider(run); run = []; return; }
+      run.push(word);
     });
+    consider(run);
   }
   return found;
+}
+
+/**
+ * The business's own name and the owner's own name, as known names. Neither is
+ * ever a mystery person, and without this every interview opened by asking who
+ * the business is. Applied at detection time rather than seeded into memory, so
+ * projects created before this fix get it too, with no migration.
+ */
+export function profileNames(model: KnowledgeModel): string[] {
+  const out: string[] = [];
+  for (const whole of [model.profile.businessName, model.profile.ownerName]) {
+    const name = (whole ?? '').trim();
+    if (!name) continue;
+    out.push(name);
+    // Also each significant word, so "Hartwell" alone is known too.
+    for (const w of name.split(/\s+/)) {
+      const word = w.replace(/[^A-Za-z']/g, '');
+      if (word.length > 1) out.push(word);
+    }
+  }
+  return out;
 }
 
 const normText = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
@@ -353,7 +408,7 @@ export class RuleBasedEngine {
       nextModel.entities.facts.push(fact);
       facts++;
 
-      for (const name of detectUndefinedNames(trimmed, nextMemory.knownNames)) {
+      for (const name of detectUndefinedNames(trimmed, [...nextMemory.knownNames, ...profileNames(nextModel)])) {
         nextMemory.knownNames.push(name);
         nextModel.entities.gaps.push({
           id: newId('gap'), type: 'gap', confidence: 'high',

@@ -604,3 +604,68 @@ right) and the section 4 architecture map (still accurate; its "8 tracks / 50
 areas" was correct where STATE.md was wrong). Also fixed NEXT-STEPS.md:130,
 which still listed CLAUDE.md under 00-control/ - a list-phrased reference the
 earlier path-based grep missed. | Done.
+
+2026-07-16 | P1 Provenance depends on who is typing (Claude Code) | DEFECT, found
+by reading capture.ts against the owner's service model. capture.ts hardcoded
+EVERY structured entity it created as source kind 'interview', detail "Entered
+directly by the owner", confidence 'high', verified=true. The Stage-2 rationale
+(":241-246", the owner is the source of truth for their own business) is sound
+ONLY while the owner is the one typing. The owner now intends to run the
+interviews himself as a service and hand back reports - so HE types the
+structure, interpreting the owner's verbatim answers. Every commitment, process
+and relationship he created would have carried provenance asserting the owner
+entered and confirmed it. Nobody did. That is a false attribution in the single
+field the entire product rests on (rules 6, 7, 9), and it was invisible because
+every doc assumes owner==user. Fix: capture.ts gains an Attribution parameter
+({enteredBy: 'owner'|'operator', operatorName?, structuredFrom?}) defaulting to
+OWNER, so existing behaviour and all prior call sites are unchanged. enteredBy
+'operator' yields kind 'inferred' (structuring someone's words IS
+interpretation), confidence 'medium', verified=FALSE, and detail "Structured by
+<name> from <source> - not yet confirmed by the owner". Deliverables therefore
+render operator-entered knowledge "(needs verification)", which is true. NO
+SCHEMA CHANGE: 'inferred' is an existing SourceKind and the trail back to the
+verbatim fact rides in SourceRef.detail. This completes a workflow that was
+already built but unreachable: nothing was ever born unverified, so setVerified()
+(the owner's promotion path) had nothing to promote. Now: operator structures ->
+renders unverified -> owner reviews -> setVerified -> confirmed. KnowledgeScreen
+gains a "Who is entering this?" control (memory-only for the sitting; the choice
+persists where it belongs, inside each entity's SourceRef). +9 tests incl. 3
+component tests proving the UI actually threads it - a correct capture.ts wired
+to a default-only screen would still have recorded operator entries as the
+owner's. | Done.
+
+2026-07-16 | P3 The May bug (Claude Code) | DEFECT. "First Year Without the
+Founder" placed facts on the month-by-month calendar with
+`f.statement.toLowerCase().includes(month.toLowerCase())` (render.ts:186).
+MONTH_NAMES contains 'May', so every statement using the modal verb - "we may
+need to order early" - was filed under May in a client-facing deliverable.
+'March' (the verb) and 'August' (the adjective) had the same flaw; 'Mayfair'
+and 'Augusta' matched too. Notable: extract.ts already guarded against exactly
+this by excluding MONTHS from contentWords (:50) - render.ts simply never got
+the same care. Fix: factsMentioningMonth() matches on word boundaries, and
+case-SENSITIVELY for the three month names that are also ordinary English words
+(months are proper nouns; an owner writing about May capitalises it). The nine
+unambiguous names stay case-insensitive so a lowercase "january" still lands.
++5 tests. | Done.
+
+2026-07-16 | P4 Name-gap noise (Claude Code) | DEFECT. detectUndefinedNames
+flagged every capitalised non-initial word individually, so the Stage 5 fixture
+- a FOUR-line vendor list - raised ELEVEN gaps including "Who or what is
+Machine?", "Tool", "Brothers", "Supply" and "FIXTURE": it split the business's
+OWN name into three separate mysteries and treated a document label as a person
+(evidence has been sitting in 07-testing/stage5-acceptance.md since Stage 5,
+never logged as a defect). At 20 employees with real documents this buries the
+dashboard's open questions. Four fixes: (1) profileNames() makes the business's
+own name and the owner's own name known - applied at DETECTION time, not seeded
+into memory, so existing projects get it with no migration; (2) consecutive
+capitalised words group into ONE name ("Ed Kowalski" asks one question, not two;
+a run whose words are all individually known is known, since punctuation like
+"&" splits "Hartwell Machine & Tool"); (3) ALL-CAPS words are labels or
+acronyms, not people - "FIXTURE" no longer raises a question; (4) MAX_NAME_GAPS
+= 25 per document, with the overflow COUNTED and reported in
+AnalysisReport.nameGapsSuppressed, the same bargain MAX_LINES already makes -
+facts are never capped, only the questions about them. Same fixture now raises 3
+gaps (Valley Brothers Supply, Ed Kowalski, Precision Carbide) instead of 11.
+One existing test asserted the old per-word behaviour (expected a gap for "Ed"
+OR "Kowalski"); it was updated to assert the better behaviour and is now the
+regression guard. +4 tests. | Done.

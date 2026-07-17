@@ -176,6 +176,24 @@ function decisionPlaybook(doc: Doc, project: ProjectFile): void {
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+/**
+ * Three month names are also ordinary English words ("we may need to", "a long
+ * march", "an august institution"). A plain case-insensitive substring match
+ * filed every "may" under May. Those three are matched case-SENSITIVELY -
+ * months are proper nouns and an owner writing about May capitalizes it - while
+ * the nine unambiguous names stay case-insensitive so a lowercase "january"
+ * still lands. Word boundaries keep "May" out of "Mayfair".
+ */
+const AMBIGUOUS_MONTHS = new Set(['March', 'May', 'August']);
+
+const monthMatcher = (month: string): RegExp =>
+  new RegExp(`\\b${month}\\b`, AMBIGUOUS_MONTHS.has(month) ? '' : 'i');
+
+export function factsMentioningMonth(facts: FactEntity[], month: string): FactEntity[] {
+  const re = monthMatcher(month);
+  return facts.filter((f) => re.test(f.statement));
+}
+
 function firstYear(doc: Doc, project: ProjectFile): void {
   const m = project.model;
   doc.h2('The annual rhythm in the owner\'s words');
@@ -183,7 +201,7 @@ function firstYear(doc: Doc, project: ProjectFile): void {
   doc.h2('Month by month');
   doc.p('Every statement on record that names a month, placed on the calendar. Months with nothing listed are not empty months - they are months nothing has been captured about yet.');
   for (const month of MONTH_NAMES) {
-    const hits = m.entities.facts.filter((f) => f.statement.toLowerCase().includes(month.toLowerCase()));
+    const hits = factsMentioningMonth(m.entities.facts, month);
     doc.h3(month);
     if (hits.length === 0) doc.p(NOT_CAPTURED);
     else for (const f of hits) doc.quote(f.statement, mark(f));
