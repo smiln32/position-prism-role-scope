@@ -844,3 +844,22 @@ Tests: 138 at the prior commit -> 150 with the PDF and role-deliverable
 suites (the first draft of this entry claimed 157 - a miscount, corrected
 before it could mislead; the commit message says 157 too and commit messages
 are immutable, so this line is the correction of record). | Done.
+
+2026-07-17 | Operator polish: persistent name + structuring workbench (Claude
+Code) | Completes the approved pre-pilot batch (role interviews, deletion
+caution, PDF export, this). Two pieces. (a) ProjectFile gains operatorName? -
+optional and additive like every prior extension; app-level bookkeeping, NOT
+captured knowledge. It only seeds the "Who is entering this?" control when
+flipping to operator mode, so the name survives between sittings; the name
+that matters is still written into each entity's SourceRef at the moment of
+entry, and saving the name does not touch the model (tested: model reference
+unchanged). (b) TranscriptSourcePicker - the structuring workbench. Operator
+mode shows the verbatim transcript (newest first, filterable, capped at 100
+shown with the cap reported, each answer under its interview question via
+trackById), with "Use as source": the picked fact's id + source detail flow
+into Attribution.structuredFrom, so a structured commitment records e.g.
+"Structured by J. Smith from fact_x (Track 3 (handshake), answer 2) - not
+yet confirmed by the owner". The selection persists across adds (one answer
+often yields several entries - the Henderson answer held two commitments)
+and is cleared explicitly. Owner mode never sees the workbench. 150 -> 154
+tests. | Done.

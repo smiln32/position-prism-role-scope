@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { KnowledgeModel, AnyEntity, CollectionKey } from './schema';
 import type { ProjectFile } from '../project/store';
+import { trackById } from '../interview/engine';
 import {
   addRelationship, addDecision, addProcess, addJudgment,
   addHistory, addSystem, addCommitment, patchEntity, setVerified,
@@ -319,8 +320,10 @@ function EntityCard({ type, entity, model, onSave }: {
  * record has to say which. Memory-only for the sitting: the choice travels into
  * each entity's SourceRef, which is where it belongs and where it persists.
  */
-function WhoIsEntering({ by, onChange }: {
+function WhoIsEntering({ by, onChange, onNameBlur }: {
   by: Attribution; onChange: (next: Attribution) => void;
+  /** Fires with the typed name when the operator leaves the name field. */
+  onNameBlur?: (name: string) => void;
 }) {
   const set = (enteredBy: EnteredBy) => onChange({ ...by, enteredBy });
   return (
@@ -341,7 +344,8 @@ function WhoIsEntering({ by, onChange }: {
             <span>Your name (recorded as the source)</span>
             <input type="text" value={by.operatorName ?? ''}
               placeholder="e.g. J. Smith"
-              onChange={(e) => onChange({ ...by, operatorName: e.target.value })} />
+              onChange={(e) => onChange({ ...by, operatorName: e.target.value })}
+              onBlur={(e) => onNameBlur?.(e.target.value)} />
           </label>
           <p className="why" style={{ marginTop: '0.35rem' }}>
             Anything you add is recorded as your interpretation, not the owner's
@@ -354,11 +358,101 @@ function WhoIsEntering({ by, onChange }: {
   );
 }
 
+/**
+ * The operator's structuring workbench: the verbatim transcript, filterable,
+ * with "Use as source" so a structured entry records exactly which answer it
+ * was drawn from. Shown only in operator mode - the owner entering their own
+ * knowledge needs no source trail beyond themselves.
+ */
+function TranscriptSourcePicker({ model, selected, onSelect }: {
+  model: KnowledgeModel;
+  selected: { id: string; detail: string } | null;
+  onSelect: (s: { id: string; detail: string } | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState('');
+
+  const questionFor = (topic: string | undefined): string => {
+    const m = /^((?:track|role)-\d+):(.+)$/.exec(topic ?? '');
+    if (!m) return topic?.startsWith('document:') ? 'From a document' : '';
+    try {
+      return trackById(m[1]).areas.find((a) => a.id === m[2])?.question ?? '';
+    } catch { return ''; }
+  };
+
+  const facts = [...model.entities.facts].reverse();
+  const needle = filter.trim().toLowerCase();
+  const shown = (needle
+    ? facts.filter((f) => f.statement.toLowerCase().includes(needle) || questionFor(f.topic).toLowerCase().includes(needle))
+    : facts).slice(0, 100);
+
+  return (
+    <div className="card" style={{ borderStyle: 'dashed' }}>
+      <div className="row" style={{ alignItems: 'center' }}>
+        <span className="small"><strong>Structure from the transcript</strong></span>
+        <button className="quiet" onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Show'}</button>
+      </div>
+      {selected && (
+        <p className="small" style={{ marginTop: '0.4rem' }}>
+          Structuring from: <em>&ldquo;{selected.detail}&rdquo;</em>{' '}
+          <button className="quiet" onClick={() => onSelect(null)}>Clear</button>
+        </p>
+      )}
+      {open && (
+        <div style={{ marginTop: '0.5rem' }}>
+          <p className="why">
+            Pick the answer you are structuring. Everything you then add is
+            recorded as drawn from that answer, so the trail from structured
+            entry back to the person&apos;s own words survives in the record.
+          </p>
+          <input type="text" value={filter} placeholder="Filter the transcript…"
+            aria-label="Filter the transcript"
+            onChange={(e) => setFilter(e.target.value)} style={{ width: '100%' }} />
+          {shown.length === 0 && <p className="small muted" style={{ marginTop: '0.5rem' }}>No captured answers match.</p>}
+          {shown.map((f) => {
+            const q = questionFor(f.topic);
+            const isSelected = selected?.id === f.id;
+            return (
+              <div key={f.id} style={{ borderTop: '1px solid var(--rule, #dddddd)', padding: '0.5rem 0' }}>
+                {q && <p className="small muted" style={{ marginBottom: '0.2rem' }}><em>{q}</em></p>}
+                <p className="small" style={{ marginBottom: '0.3rem' }}>&ldquo;{f.statement}&rdquo;</p>
+                <button className="quiet" disabled={isSelected}
+                  onClick={() => onSelect({ id: f.id, detail: f.sources[0]?.detail ?? f.id })}>
+                  {isSelected ? 'Selected' : 'Use as source'}
+                </button>
+              </div>
+            );
+          })}
+          {facts.length > shown.length && (
+            <p className="small muted">Showing {shown.length} of {facts.length} answers - filter to narrow.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function KnowledgeScreen({ project, onSave, onBack }: {
   project: ProjectFile; onSave: (next: ProjectFile) => void; onBack: () => void;
 }) {
   const save = (nextModel: KnowledgeModel) => onSave({ ...project, model: nextModel });
   const [by, setBy] = useState<Attribution>(OWNER);
+  const [source, setSource] = useState<{ id: string; detail: string } | null>(null);
+
+  // The operator's name survives between sittings on the project file
+  // (app-level bookkeeping); the name that matters is written into each
+  // entity's SourceRef at the moment of entry.
+  const persistOperatorName = (name: string) => {
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== project.operatorName) {
+      onSave({ ...project, operatorName: trimmed });
+    }
+  };
+
+  // Full attribution for an add: the who, plus the picked transcript source.
+  const attribution: Attribution = by.enteredBy === 'operator'
+    ? { ...by, structuredFrom: source ? `${source.id} (${source.detail})` : undefined }
+    : by;
 
   return (
     <section>
@@ -371,7 +465,18 @@ export default function KnowledgeScreen({ project, onSave, onBack }: {
         here - nothing is invented.
       </p>
 
-      <WhoIsEntering by={by} onChange={setBy} />
+      <WhoIsEntering by={by}
+        onChange={(next) => {
+          // Flipping to operator mode seeds the saved name from the project.
+          if (next.enteredBy === 'operator' && !next.operatorName && project.operatorName) {
+            next = { ...next, operatorName: project.operatorName };
+          }
+          setBy(next);
+        }}
+        onNameBlur={persistOperatorName} />
+      {by.enteredBy === 'operator' && (
+        <TranscriptSourcePicker model={project.model} selected={source} onSelect={setSource} />
+      )}
 
       {TYPES.map((t) => {
         const items = project.model.entities[t.key] as AnyEntity[];
@@ -383,7 +488,7 @@ export default function KnowledgeScreen({ project, onSave, onBack }: {
             {items.map((e) => (
               <EntityCard key={e.id} type={t} entity={e} model={project.model} onSave={save} />
             ))}
-            {t.add && <AddForm type={t} onAdd={(input) => save(t.add!(project.model, input, by))} />}
+            {t.add && <AddForm type={t} onAdd={(input) => save(t.add!(project.model, input, attribution))} />}
           </div>
         );
       })}

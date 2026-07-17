@@ -6,6 +6,7 @@ import { createEmptyModel } from './model';
 import { addRelationship, addProcess } from './capture';
 import type { ProcessEntity } from './schema';
 import { PROJECT_FORMAT_VERSION, type ProjectFile } from '../project/store';
+import { RuleBasedEngine } from '../interview/engine';
 
 afterEach(cleanup);
 
@@ -150,5 +151,73 @@ describe('KnowledgeScreen: who is entering this', () => {
     expect(screen.queryByText(/your interpretation, not the owner/)).toBeNull();
     fireEvent.click(screen.getByLabelText(/Someone else, writing up what the owner said/));
     expect(screen.getByText(/your interpretation, not the owner/)).toBeTruthy();
+  });
+});
+
+/**
+ * Operator polish (2026-07-17, DECISIONS.md): the operator's name survives
+ * between sittings on the project file, and the structuring workbench lets an
+ * entry record exactly which verbatim answer it was drawn from.
+ */
+describe('KnowledgeScreen: operator workbench', () => {
+  const enterOperatorMode = (name?: string) => {
+    fireEvent.click(screen.getByLabelText(/Someone else, writing up what the owner said/));
+    if (name !== undefined) {
+      const input = screen.getByLabelText(/Your name/);
+      fireEvent.change(input, { target: { value: name } });
+      fireEvent.blur(input);
+    }
+  };
+
+  it('persists the operator name onto the project on blur', () => {
+    const project = projectWith();
+    let saved: ProjectFile | null = null;
+    render(<KnowledgeScreen project={project} onSave={(p) => { saved = p; }} onBack={() => {}} />);
+    enterOperatorMode('J. Smith');
+    expect(saved!.operatorName).toBe('J. Smith');
+    // App-level bookkeeping only - the model is untouched by the name save:
+    expect(saved!.model).toBe(project.model);
+  });
+
+  it('seeds the name from the project when flipping to operator mode', () => {
+    const project = { ...projectWith(), operatorName: 'J. Smith' };
+    render(<KnowledgeScreen project={project} onSave={() => {}} onBack={() => {}} />);
+    fireEvent.click(screen.getByLabelText(/Someone else, writing up what the owner said/));
+    expect((screen.getByLabelText(/Your name/) as HTMLInputElement).value).toBe('J. Smith');
+  });
+
+  it('the transcript picker threads the chosen answer into the entry source', () => {
+    // A project with one captured interview answer to structure from:
+    const engine = new RuleBasedEngine();
+    const memory = engine.createMemory();
+    let model = createEmptyModel('wb', { businessName: 'B Co', ownerName: 'O' });
+    const r = engine.ingestAnswer(memory, model, 's1', 'track-3',
+      'Years back I told Henderson we would eat the freight on anything over ten cases.');
+    model = r.model;
+    const project: ProjectFile = { formatVersion: PROJECT_FORMAT_VERSION, model, sessions: [], interviewMemory: r.memory };
+    const factId = model.entities.facts[0].id;
+
+    let saved: ProjectFile | null = null;
+    render(<KnowledgeScreen project={project} onSave={(p) => { saved = p; }} onBack={() => {}} />);
+    enterOperatorMode('J. Smith');
+    // Open the workbench, find the answer, select it as the source:
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+    // The verbatim answer appears in the workbench AND in the facts section:
+    expect(screen.getAllByText(/eat the freight/).length).toBeGreaterThanOrEqual(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Use as source' }));
+    expect(screen.getByText(/Structuring from:/)).toBeTruthy();
+    // Add a commitment; its provenance names operator AND the source fact:
+    fireEvent.click(screen.getByRole('button', { name: '+ Add a commitment' }));
+    fireEvent.change(screen.getByLabelText('With whom'), { target: { value: 'Henderson' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    const c = saved!.model.entities.commitments[0];
+    expect(c.sources[0].detail).toContain('Structured by J. Smith');
+    expect(c.sources[0].detail).toContain(factId);
+    expect(c.verified).toBe(false);
+  });
+
+  it('the workbench is not shown in owner mode', () => {
+    render(<KnowledgeScreen project={projectWith()} onSave={() => {}} onBack={() => {}} />);
+    expect(screen.queryByText('Structure from the transcript')).toBeNull();
   });
 });

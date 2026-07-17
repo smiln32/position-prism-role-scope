@@ -47,6 +47,14 @@ export interface ProjectFile {
   documents?: import('../analysis/extract').ProjectDocument[];
   /** Per-deliverable version counters (Stage 6+). Optional and additive. */
   deliverableVersions?: Record<string, number>;
+  /**
+   * The operator's name for service engagements (2026-07-17). Optional and
+   * additive; app-level bookkeeping, not captured knowledge - it seeds the
+   * "Who is entering this?" control so the name survives between sittings.
+   * The name that MATTERS lives where it always did: inside each structured
+   * entity's SourceRef, written at the moment of entry.
+   */
+  operatorName?: string;
 }
 
 /** Fold legacy Stage 3 per-session interview state into project memory. */
