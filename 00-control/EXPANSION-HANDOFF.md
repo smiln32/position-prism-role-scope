@@ -172,7 +172,17 @@ against master — no vault, no crypto, no structured capture), so **port
 the branch as-is.** The design is worth keeping: deterministic rules floor
 first, LLM only as reworder + extractor on top, every extraction
 'inferred'/low/unverified. Live verification still needs the owner's API key
-(recommended model `claude-haiku-4-5`).
+(recommended model `claude-haiku-4-5`). Revival scope (owner, 2026-07-16):
+(a) extend extraction beyond processes/decisions/relationships to commitments
+and systems - the draft's schema omits them, and commitments are the
+highest-value output; (b) add CLARIFICATION FLAGGING - the model also returns
+questions about what an answer left ambiguous or missing ("is anything owed in
+return?", "what's the threshold?"), each becoming an inferred GapEntity plus a
+queued follow-up thread, so the next sitting opens by asking it. The Gap
+machinery and the ask-threads-first queue already exist; only the smarter
+flagger is new. Cap flags per answer (the P4 noise lesson). Arguably worth
+more than the extraction itself - it is the "ask what is still missing"
+adaptive interview the original master prompt promised.
 
 **B. Finish structured capture — DONE (PR #5, 2026-07-13).** Array fields are
 editable item-by-item via `addListItem`/`editListItem`/`removeListItem`. Steps
