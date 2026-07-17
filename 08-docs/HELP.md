@@ -22,6 +22,14 @@ actually use. Everything stays on your computer. Nothing is sent anywhere.
 "Export this project" saves a single file. Keep it with your important
 papers, or move it to another computer with "Restore from a project file."
 
+## Deleting a project from this computer
+"Delete from this computer…" on a project's card removes the working copy
+and its automatic backup here. It cannot be undone, and it does not touch
+files you have exported or reports you have printed. The app will ask you
+to confirm that you have an exported copy and have checked that it
+restores - do that first, every time. (If this computer is used to prepare
+projects for someone else, see CUSTODY.md for the full hand-over routine.)
+
 ## Protecting this computer
 "Protect this computer" (on the home screen) locks everything stored here
 behind a passphrase of your choosing. The passphrase is never written down

@@ -781,3 +781,24 @@ track-5/6/8 quote sections of Decision Playbook / Memory Archive / Emergency
 Brief) reference owner track ids, so for role projects those sections render
 "not asked" - honest but thin. A role-appropriate deliverable set is the
 follow-up (with the PDF work), not a silent gap. 131 -> 136 tests. | Done.
+
+2026-07-17 | Data custody protocol + deletion caution flow (Claude Code,
+owner-directed) | Owner approved the per-engagement custody protocol
+(vault-first, export, VERIFY, then delete; encrypted or client-custodied
+delivery drives; keep-nothing vs keep-encrypted decided in the engagement
+letter) and directed: "I need the app to clearly identify and caution when I
+request any files be deleted." Finding: the app had NO deletion in its UI at
+all - ProjectStore.remove() existed, tested, wired to nothing - so the
+custody protocol's final step was impossible without devtools. Built
+DeleteProjectControl on each home-screen project card: names exactly what is
+being deleted, warns that the working copy AND the automatic backup slot go
+together, states what is NOT touched (exported files, printed reports),
+pushes export-and-verify first (with an "Export a copy now" button in the
+flow), and keeps the destructive button DISABLED until the operator attests
+to a verified exported copy. Cancel resets the attestation. Deliberate
+friction, in keeping with rule 9's spirit: this is the one place captured
+knowledge can leave the store. Protocol written to 08-docs/CUSTODY.md
+(including the honest limits: app deletion is not forensic erasure, which is
+why vault-first is step 1; plaintext export is the drive's weak point);
+HELP.md gained the user-facing paragraph. 136 -> 138 tests, incl. the
+disabled-until-attested gate and primary+backup removal. | Done.
