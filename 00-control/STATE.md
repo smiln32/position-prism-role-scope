@@ -61,9 +61,11 @@ Suite 124 -> 131. Frozen schema and scoring formula untouched.
   (replaced with pointers, not fresh numbers), HELP.md's missing passphrase +
   file-type notes, build-review.md's unmarked stale "VERIFIED" claims (dated
   banner added).
-Still open, needs the owner: PR #3 (rebase across 5 merged PRs + API key, or
-cut it), the org rollup (multi-model renderer - new feature), P2-A/engagement
-types, real PDF export, pushing the branches.
+Same session, third pass: PRs #3 and #8 CLOSED on GitHub (owner-directed
+archive; both branches retained on origin - #3 is deferred-not-rejected, see
+DECISIONS.md 2026-07-16 for the port-don't-merge revival note).
+Still open, needs the owner: the org rollup (multi-model renderer - new
+feature), P2-A/engagement types, real PDF export, pushing the branches.
 Next stage: none in the staged build. The path from prototype to shippable
 product is now tracked in PATH-TO-SHIP.md (three owner decisions + Tiers 1-4).
 Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.

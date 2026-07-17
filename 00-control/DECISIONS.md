@@ -735,3 +735,21 @@ read. build-review.md: dated point-in-time banner added; it asserted VERIFIED
 consistency (56 tests, eight screens) that no longer holds and claimed no
 exemption for itself while granting one to other evidence files. Point-in-time
 stage evidence files left untouched per their own exemption. | Done.
+
+2026-07-16 | PRs #3 and #8 archived (Claude Code, owner-directed) | Owner:
+"leave it for later and archive that and 8 if they aren't being used now."
+Verified neither is in use, then closed both on GitHub with rationale comments.
+#8 (docs/session-handoff-2026-07-13): superseded by HANDOFF-2026-07-15.md,
+pure staleness, no decision content lost. #3 (feature/llm-interview-adapter):
+DEFERRED, NOT REJECTED. The owner's decision is only "not before the pilot" -
+run the first service engagement structuring by hand, and revive the adapter
+if that labor proves to be the bottleneck. Critical for whoever revives it:
+the branch predates PRs #4/#5/#6/#7/#9 (a diff against master shows ~4,300
+deletions - no vault.ts, crypto.ts, capture.ts, KnowledgeScreen); reviving
+means PORTING llm.ts + the InterviewEngine interface onto today's master,
+never merging the branch as-is. The adapter design itself is sound and worth
+keeping: deterministic rules floor first, LLM only reworder + extractor on
+top, every extraction 'inferred'/low/unverified. BOTH BRANCHES ARE RETAINED
+on origin as the archive - closing a PR deletes nothing; do not delete
+feature/llm-interview-adapter. This also finally gives #3 the explicit
+status the decision log never had (flagged in the 2026-07-16 audit). | Done.

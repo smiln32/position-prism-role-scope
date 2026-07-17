@@ -86,12 +86,12 @@ everything below except the LLM adapter. Nothing is on fire.
 |----|--------|--------|---------------|
 | #1 | `maintenance/merge-report-timestamp-fix` | **Merged** | Merge report counts content changes only, not timestamp bumps |
 | #2 | `feature/structured-knowledge-capture` | **Merged** | Direct structured capture + Knowledge screen + the jsdom component-test harness |
-| #3 | `feature/llm-interview-adapter` | **OPEN — DRAFT** | Optional Anthropic (Haiku) interview adapter. Engine unit-tested; **live network + async UI path NOT browser-verified.** Blocked on your API key — see §6A |
+| #3 | `feature/llm-interview-adapter` | **CLOSED — archived 2026-07-16, deferred not rejected** | Optional Anthropic (Haiku) interview adapter. Revive by **porting onto today's master** (the branch predates #4–#9; never merge it as-is) if pilot structuring labor proves the bottleneck — see §6A |
 | #4 | `feature/data-at-rest-encryption` | **Merged** | Passphrase protection (WebCrypto PBKDF2 250k / AES-GCM) behind the `StorageLike` seam; passphrase memory-only |
 | #5 | `feature/list-field-editing` | **Merged** | Array fields editable item-by-item — completed the "edit everything" story |
 | #6 | `feature/storage-durability` | **Merged** | Collision-proof `newId` (full UUID), one-deep backup slot with corrupt-primary recovery, quota-aware save errors |
 | #7 | `perf/code-split-screens` | **Merged** | Route-level code splitting; initial JS 87.2 → 69.0 KB gzip (~21%) |
-| #8 | `docs/session-handoff-2026-07-13` | **OPEN — stale** | Superseded handoff snapshot. Close or merge as docs; owner's call |
+| #8 | `docs/session-handoff-2026-07-13` | **CLOSED — archived 2026-07-16** | Superseded by HANDOFF-2026-07-15.md; nothing lost |
 | #9 | `fix/scroll-to-top-on-navigation` | **Merged** | Every view opens at the top |
 | #10 | `docs/readme-and-env-gitignore` | **Merged** | Top-level README; `.env` ignored in both gitignores |
 | #11 | `docs/handoff-and-ship-plan-2026-07-15` | **Merged** | `HANDOFF-2026-07-15.md` + `PATH-TO-SHIP.md` |
@@ -162,16 +162,17 @@ answer costs an order of magnitude more.
 Items marked **DONE** are kept for continuity — the original roadmap sent a
 later session to redo them. Do not rebuild them.
 
-**A. Finish the LLM adapter (PR #3) — needs YOU for one step.** The blocker is
-verification, not code. `git checkout feature/llm-interview-adapter`,
-`npm install && npm run dev`, open **"Assisted interviewing"** on the home
-screen, paste a real Anthropic key (recommended model `claude-haiku-4-5`), run a
-short interview, and confirm (a) live structured extraction lands in the model,
-(b) question rewording works, (c) errors/timeouts degrade gracefully to the
-rule-based engine. Then mark #3 ready and merge, and log the result in
-`DECISIONS.md`. Expect a small additive `App.tsx` reconciliation. *Claude cannot
-do the key step.* Alternatively, cut #3 from v1 — that is one of the three
-`PATH-TO-SHIP.md` decisions.
+**A. The LLM adapter — ARCHIVED 2026-07-16, deferred not rejected.** PR #3 is
+closed; the branch `feature/llm-interview-adapter` is retained on origin as the
+archive (do not delete it). Owner's decision: run the first service pilot
+structuring **by hand**, and revive the adapter if that labor proves to be the
+bottleneck. Whoever revives it: the branch predates PRs #4–#9 (~4,300 deletions
+against master — no vault, no crypto, no structured capture), so **port
+`llm.ts` and the `InterviewEngine` interface onto today's master; never merge
+the branch as-is.** The design is worth keeping: deterministic rules floor
+first, LLM only as reworder + extractor on top, every extraction
+'inferred'/low/unverified. Live verification still needs the owner's API key
+(recommended model `claude-haiku-4-5`).
 
 **B. Finish structured capture — DONE (PR #5, 2026-07-13).** Array fields are
 editable item-by-item via `addListItem`/`editListItem`/`removeListItem`. Steps
