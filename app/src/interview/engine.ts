@@ -6,11 +6,26 @@ import { newId } from '../knowledge-model/model';
  * contradiction detection. Rule-based (see DECISIONS.md rulings).
  *
  * Knowledge integrity: Facts are the owner's answers verbatim. Gaps and
- * Risks are the only inferred entities, always labeled 'inferred' with the
- * trigger recorded. Contradiction gaps quote both answers verbatim.
+ * regex-detected Risks are inferred entities, always labeled 'inferred' with
+ * the trigger recorded. Track 7 answers additionally become owner-declared
+ * Risks - source 'interview', because the owner stated them in answer to a
+ * question about risk (see TrackArea.riskKind). Contradiction gaps quote
+ * both answers verbatim.
  */
 
-export interface TrackArea { id: string; question: string; }
+export interface TrackArea {
+  id: string;
+  question: string;
+  /**
+   * Set on areas that ask about risk directly (Track 7). A substantive answer
+   * there IS a risk statement in the owner's own words, so it is recorded as a
+   * RiskEntity too - source 'interview', not 'inferred', because the owner said
+   * it, not the machine. Before this, none of Track 7's six risk questions
+   * produced a single RiskEntity; the Risk Report saw only regex-detected
+   * "only I do that" risks (see DECISIONS.md 2026-07-16, P5).
+   */
+  riskKind?: string;
+}
 export interface TrackDef { id: string; n: number; title: string; areas: TrackArea[]; }
 
 export const TRACKS: TrackDef[] = [
@@ -85,12 +100,12 @@ export const TRACKS: TrackDef[] = [
   {
     id: 'track-7', n: 7, title: 'Risks & Fragilities',
     areas: [
-      { id: 'keeps-up', question: 'What keeps you up at night about this business right now?' },
-      { id: 'single-points', question: 'Where does everything depend on one person, one customer, one machine, or one relationship?' },
-      { id: 'diligence', question: 'If a buyer went digging tomorrow, what would they find that worries you?' },
-      { id: 'fragile', question: 'What is more fragile than it looks from the outside?' },
-      { id: 'slow-leaks', question: 'What problems are slow leaks - not urgent today, but costly if ignored for two years?' },
-      { id: 'outside-shocks', question: 'Which outside changes - a lost supplier, a rule change, a competitor move - would hurt most?' },
+      { id: 'keeps-up', question: 'What keeps you up at night about this business right now?', riskKind: 'owner concern' },
+      { id: 'single-points', question: 'Where does everything depend on one person, one customer, one machine, or one relationship?', riskKind: 'single point of failure' },
+      { id: 'diligence', question: 'If a buyer went digging tomorrow, what would they find that worries you?', riskKind: 'diligence exposure' },
+      { id: 'fragile', question: 'What is more fragile than it looks from the outside?', riskKind: 'fragility' },
+      { id: 'slow-leaks', question: 'What problems are slow leaks - not urgent today, but costly if ignored for two years?', riskKind: 'slow leak' },
+      { id: 'outside-shocks', question: 'Which outside changes - a lost supplier, a rule change, a competitor move - would hurt most?', riskKind: 'outside shock' },
     ],
   },
   {
@@ -407,6 +422,26 @@ export class RuleBasedEngine {
       };
       nextModel.entities.facts.push(fact);
       facts++;
+
+      // Owner-declared risks. Track 7 asks about risk in so many words, so a
+      // substantive answer is recorded as a risk the owner stated - verbatim,
+      // source 'interview', confidence high (they said it), verified false
+      // (like every captured statement, it still awaits their confirmation).
+      // Primary answers only: follow-ups and revisits elaborate an area that
+      // already produced its risk. A leading dismissal ("nothing really") is
+      // an answer, not a risk - it stays a fact and never reaches the report.
+      const area = track.areas.find((a) => a.id === areaId);
+      if (area?.riskKind && !wasFollowUp && !revisitAreaId && !/^\s*(nothing|none|no(t really)?|nope)\b/i.test(trimmed)) {
+        nextModel.entities.risks.push({
+          id: newId('risk'), type: 'risk', confidence: 'high',
+          sources: [{ kind: 'interview', sessionId, detail, capturedAt: now }],
+          createdAt: now, updatedAt: now, verified: false,
+          description: trimmed,
+          impact: 'Not yet captured',
+          riskKind: area.riskKind,
+        } satisfies RiskEntity);
+        risks++;
+      }
 
       for (const name of detectUndefinedNames(trimmed, [...nextMemory.knownNames, ...profileNames(nextModel)])) {
         nextMemory.knownNames.push(name);

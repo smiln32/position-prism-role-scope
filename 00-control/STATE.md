@@ -41,10 +41,29 @@ company keeps its data). Test suite 106 -> 124. Frozen schema untouched.
   Machine?"). Now: business/owner names are known, consecutive capitals group
   into one name, ALL-CAPS labels are ignored, and gaps are capped at 25/document
   with the overflow reported. Same fixture: 11 -> 3 gaps.
-Next, agreed with the owner: P2 (the rule-based ceiling - interviews write only
-3 of 10 entity types) and P5 (flat risk scores; Track 7 "Risks & Fragilities"
-produces no RiskEntity at all). Then P6/P7. Deferred: PR #3's staleness, the
-org rollup, and README.md:159's claim that the AI adapter exists.
+Same session, second pass ("clean the rest up", owner-delegated judgment).
+Suite 124 -> 131. Frozen schema and scoring formula untouched.
+- P5: Track 7 answers now become owner-declared RiskEntities (verbatim, source
+  'interview', high, unverified; riskKind per area; dismissals excluded).
+  Before: the risk track produced zero risks and every risk scored 95.
+- P6: handbook renders document lines grouped per document as bullets, not one
+  blockquote per line. Capture and AI export unchanged.
+- P7: renderers distinguish NOT_ASKED ("This part of the interview has not
+  been asked yet.") from NOT_CAPTURED via interviewMemory. Engine completion
+  semantics deliberately untouched (that's the engagement-type knob, deferred
+  with P2-A pending the pilot).
+- P2: resolved for the pilot by P1's operator attribution (post-hoc
+  structuring, honestly attributed). In-interview structured capture (P2-A)
+  and the LLM adapter (P2-B) deferred pending pilot evidence, per the accepted
+  recommendation.
+- Living-doc staleness fixed: README's phantom "existing" AI adapter (draft
+  PR #3, not on master - now says so), coverage "/8", embedded test counts
+  (replaced with pointers, not fresh numbers), HELP.md's missing passphrase +
+  file-type notes, build-review.md's unmarked stale "VERIFIED" claims (dated
+  banner added).
+Still open, needs the owner: PR #3 (rebase across 5 merged PRs + API key, or
+cut it), the org rollup (multi-model renderer - new feature), P2-A/engagement
+types, real PDF export, pushing the branches.
 Next stage: none in the staged build. The path from prototype to shippable
 product is now tracked in PATH-TO-SHIP.md (three owner decisions + Tiers 1-4).
 Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.

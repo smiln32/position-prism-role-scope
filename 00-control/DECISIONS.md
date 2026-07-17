@@ -669,3 +669,69 @@ gaps (Valley Brothers Supply, Ed Kowalski, Precision Carbide) instead of 11.
 One existing test asserted the old per-word behaviour (expected a gap for "Ed"
 OR "Kowalski"); it was updated to assert the better behaviour and is now the
 regression guard. +4 tests. | Done.
+
+2026-07-16 | P5 Track 7 answers become owner-declared risks (Claude Code) |
+DEFECT of omission. Track 7 is titled "Risks & Fragilities" and asks six
+questions about risk - and no answer to any of them ever became a RiskEntity.
+Answers landed as facts only; RiskEntities came solely from the ONLY_ME regex
+(any track). So the Knowledge Risk Report ignored the six questions explicitly
+about risk, and every risk it did show scored an identical 95 (same inputs:
+inferred + SPOF + no mitigation + unverified + medium) - a "ranked" register
+that ranked nothing. Fix: TrackArea gains optional riskKind; all six Track 7
+areas carry one (owner concern / single point of failure / diligence exposure /
+fragility / slow leak / outside shock). A substantive primary answer to such an
+area is recorded as a RiskEntity too: description = the answer VERBATIM, source
+'interview' (the owner said it - this is deliberately NOT 'inferred'; the
+engine's integrity note was updated), confidence high, verified false. Guards:
+primary answers only (follow-ups and revisits elaborate an area that already
+produced its risk), and a leading dismissal ("nothing really...") stays a fact
+only - a scored risk reading "Nothing really keeps me up" would be the May bug
+all over again. Scoring now has real spread (owner-declared 75, SPOF-flavored
+100, inferred SPOF 95) without touching the published formula. Scope note:
+track-1 'first-break' arguably also qualifies; left alone deliberately -
+conservative first, widen after the pilot shows how Track 7 risks read. +4
+tests. | Done.
+
+2026-07-16 | P6 Document lines render grouped, not blockquoted (Claude Code) |
+Deliverable-quality fix. The Successor's Handbook rendered every document-
+sourced fact as its own blockquote with per-line attribution, so a 500-line SOP
+became 500 blockquotes with blank lines between - tripling page count and
+burying the interview knowledge the handbook exists to carry. Now grouped under
+one h3 per source document (name from ProjectFile.documents - owner-provided
+data, not invention; heading not audit-registered, same as the month headings)
+and rendered as compact bullets. Capture unchanged: every line is still a
+verbatim Fact with document id + line number on its SourceRef, all of it in the
+AI export. Only the handbook's presentation changed. | Done.
+
+2026-07-16 | P7 "Not asked" vs "not yet captured" (Claude Code) | Deliverable-
+honesty fix for the service model. Every empty section printed "Not yet
+captured." - which reads as unfinished work when the engagement DELIBERATELY
+scoped to three tracks. Two different truths need two labels: NOT_ASKED ("This
+part of the interview has not been asked yet.") when interviewMemory shows the
+track/area was never reached, NOT_CAPTURED only when it WAS asked and nothing
+is on record - the second being a real gap that belongs in the report.
+Implemented in the renderers only (quoteArea() consults trackProgress; handbook
+per-track; firstYear/emergencyBrief/decisionPlaybook/memoryArchive per-area).
+Entity-backed sections (relationships, commitments, systems...) keep NOT_CAPTURED
+- they are populated by structuring, not by reaching an area. The engine's
+completion semantics (allComplete = all 50 areas) are deliberately untouched:
+that is the engagement-type knob, deferred with P2-A pending the pilot. +3
+tests. | Done.
+
+2026-07-16 | Living-doc staleness cleanup (Claude Code) | Follow-through on the
+audit that found EXPANSION-HANDOFF actively harmful. Fixed the living docs that
+asserted stale facts: README.md:160 claimed "the existing optional AI adapter"
+- it does NOT exist on master (draft PR #3); now says so plainly. README's
+governing-docs pointer updated for root CLAUDE.md/CONTEXT.md. 02-interview
+README: "coverage /8" (wrong for 7 of 8 tracks) and "33-test suite";
+03-analysis README: "40-test suite" - counts replaced with a pointer to
+STATE.md rather than a new number that would just drift again (the 44-vs-50
+lesson: docs that embed counts go stale silently). 05-deliverables README:
+"numeric scoring arrives Stage 7" future tense, shipped long ago. HELP.md (the
+in-product help): now mentions passphrase protection (shipped 2026-07-13,
+including that a forgotten passphrase is unrecoverable) and the .txt/.md/.csv
+document limitation - both documented everywhere except the one file users
+read. build-review.md: dated point-in-time banner added; it asserted VERIFIED
+consistency (56 tests, eight screens) that no longer holds and claimed no
+exemption for itself while granting one to other evidence files. Point-in-time
+stage evidence files left untouched per their own exemption. | Done.
