@@ -840,5 +840,7 @@ NAME never appears in identity lines, per the attribution decision), and the
 quoted areas map to ROLE_TRACKS (deciding: role-4; scar tissue: role-6;
 annual/first-break: role-1; change-slowly/never-change/meet-first: role-7).
 Owner projects are unchanged - subjectWords returns every original string.
-149 tests at the previous commit -> 157 with the PDF and role-deliverable
-suites. | Done.
+Tests: 138 at the prior commit -> 150 with the PDF and role-deliverable
+suites (the first draft of this entry claimed 157 - a miscount, corrected
+before it could mislead; the commit message says 157 too and commit messages
+are immutable, so this line is the correction of record). | Done.
