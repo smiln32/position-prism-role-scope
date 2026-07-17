@@ -6,7 +6,7 @@ not duplicate. Every folder's own README remains the authority on its domain._
 
 **Read first:** `CLAUDE.md` (operating rules — Layer 0, repo root, and **nowhere
 else**) before writing any code. Then `00-control/STATE.md` (where the build
-stands) and `00-control/HANDOFF-2026-07-15.md` (latest session snapshot).
+stands) and `00-control/HANDOFF-2026-07-16.md` (latest session snapshot).
 
 ---
 
@@ -75,7 +75,7 @@ not a missing feature. Tracked as ICM-09 in `ICM-AUDIT-LOG.md`.
 | Product spec (source of truth) | `00-control/MASTER-SPEC.md` |
 | **Project memory** — why anything is the way it is | `00-control/DECISIONS.md` |
 | Current build state | `00-control/STATE.md` |
-| Latest session snapshot | `00-control/HANDOFF-2026-07-15.md` |
+| Latest session snapshot | `00-control/HANDOFF-2026-07-16.md` |
 | What to pick up next | `00-control/NEXT-STEPS.md` |
 | Roadmap + non-negotiables (long form) | `00-control/EXPANSION-HANDOFF.md` |
 | Prototype → shippable product plan | `00-control/PATH-TO-SHIP.md` |

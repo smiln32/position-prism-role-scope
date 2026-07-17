@@ -19,14 +19,14 @@ writing code._
 ## 1. Current state (as of 2026-07-13)
 
 The staged build (Stages 0–8) is complete and approved on `master`. Five
-expansion PRs have now **merged to master**; only the LLM adapter is still open
-(a draft, blocked on your API-key check).
+expansion PRs have now **merged to master**; the LLM adapter (#3) was
+**archived 2026-07-16** (deferred pending the pilot), and no PRs remain open.
 
 | PR | Branch | Status | Notes |
 |----|--------|--------|-------|
 | #1 | `maintenance/merge-report-timestamp-fix` | **Merged** ✅ | Merge report counts content changes only, not timestamp bumps |
 | #2 | `feature/structured-knowledge-capture` | **Merged** ✅ | Direct structured capture + owner-facing Knowledge screen + jsdom component tests. Brought dev-deps `jsdom` + `@testing-library/*` to master. |
-| #3 | `feature/llm-interview-adapter` | **Open — DRAFT** ⏸️ | Optional Anthropic (Haiku) interview adapter. Engine logic unit-tested; **the live network + async UI path is NOT browser-verified.** Do not merge until it is (see item 3A below). |
+| #3 | `feature/llm-interview-adapter` | **Closed — archived 2026-07-16** 📦 | Deferred, not rejected. Revive by **porting onto master** (branch predates #4–#9; never merge as-is) if pilot structuring labor demands it — see EXPANSION-HANDOFF §6A. |
 | #4 | `feature/data-at-rest-encryption` | **Merged** 🔐 | Passphrase protection for localStorage behind the StorageLike seam; frozen schema untouched; passphrase memory-only. |
 | #5 | `feature/list-field-editing` | **Merged** ✅ | Finish structured capture (item 3C): array fields editable item-by-item. |
 | #6 | `feature/storage-durability` | **Merged** 🛟 | Robustness item E (non-speculative parts): collision-proof `newId` + a one-deep backup slot with corrupt-primary recovery and quota-aware save errors. |
@@ -68,7 +68,7 @@ labeled inference only, never delete captured knowledge, no stored credentials,
 zero-invention audit must keep passing, don't touch the frozen schema without a
 versioned decision).
 
-### A. Finish the LLM adapter (PR #3) — needs YOU for one step
+### A. ~~Finish the LLM adapter (PR #3)~~ — ARCHIVED 2026-07-16, revisit after the pilot
 The blocker is verification, not code. The engine is written and unit-tested;
 the live path has never run against a real key.
 1. `git checkout feature/llm-interview-adapter`, then `npm install && npm run dev`.
