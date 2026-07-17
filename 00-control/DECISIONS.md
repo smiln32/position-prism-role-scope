@@ -802,3 +802,43 @@ knowledge can leave the store. Protocol written to 08-docs/CUSTODY.md
 why vault-first is step 1; plaintext export is the drive's weak point);
 HELP.md gained the user-facing paragraph. 136 -> 138 tests, incl. the
 disabled-until-attested gate and primary+backup removal. | Done.
+
+2026-07-17 | Real PDF export + first runtime dependency (Claude Code, owner-
+approved plan) | The report IS the product in the service model, and browser
+"Print to PDF" is not a client deliverable - PATH-TO-SHIP Tier 2, promoted.
+DEPENDENCY DECISION (spec: "no unnecessary dependencies" - this one is
+necessary): pdfmake 0.3.11. Considered: hand-rolled PDF writer (rejected:
+accurate glyph-width tables cannot be reproduced from memory without
+fabrication risk; Courier-only would dodge that but reads as a typewriter,
+not a professional deliverable); jsPDF (rejected: manual text placement);
+@react-pdf (rejected: heavier, own component world). Two mitigations make
+pdfmake nearly free: (a) it is imported ONLY via dynamic import inside
+generatePdfBytes(), so it lives in lazy chunks (pdfmake 346KB gzip + Times
+AFM 49KB + Courier 12KB) fetched on the first PDF click - the initial bundle
+is unchanged by it; (b) the PDF uses the STANDARD-14 Times/Courier fonts via
+pdfmake's addFontContainer (AFM metrics only, no TTF embedding - verified by
+probe before wiring), which matches the visual system's serif printed-page
+feel and keeps output small. The converter (pdf.ts markdownToPdfContent) is
+PURE, knows only the markdown subset our own Doc generator emits, and never
+sees the model - it reshapes exactly what the zero-invention audit already
+covers. UI: per-document "PDF" buttons and "Download the whole package
+(PDF)" (one file, page break per document) on DeliverablesScreen, with a
+busy state and a markdown fallback message on failure. Tests: converter
+unit tests + a REAL-BYTES test running pdfmake headless over the full
+fixture package (asserts %PDF header, multi-page, Times-Roman present,
+Roboto absent). | Done.
+
+2026-07-17 | Role-project deliverables (Claude Code) | Closes the interim
+limitation logged with the role-interviews decision: role projects no longer
+render owner-shaped documents full of "not asked". Same nine documents, same
+ids (versions and navigation unchanged); three titles speak about the job
+(The Role Handbook; The First Year in the Role; Relationship & Handoff Map);
+each renderer is subject-aware through one subjectWords() helper - the
+header line becomes "documenting the role of X, in the words of the person
+who does it" (X = subjectRole, registered with the audit; the role-holder's
+NAME never appears in identity lines, per the attribution decision), and the
+quoted areas map to ROLE_TRACKS (deciding: role-4; scar tissue: role-6;
+annual/first-break: role-1; change-slowly/never-change/meet-first: role-7).
+Owner projects are unchanged - subjectWords returns every original string.
+149 tests at the previous commit -> 157 with the PDF and role-deliverable
+suites. | Done.

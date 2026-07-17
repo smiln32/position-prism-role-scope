@@ -230,3 +230,55 @@ describe('P6/P7: scope-aware sections and compact document rendering', () => {
     expect(auditRendered(rendered, project.model)).toEqual([]);
   });
 });
+
+/**
+ * Role-project deliverables (2026-07-17). Same nine documents; three titles
+ * speak about the job; the renderers quote ROLE_TRACKS areas and the header
+ * names the role - never the role-holder (names are attribution, not
+ * identity). See DECISIONS.md 2026-07-17.
+ */
+describe('Role-project deliverables', () => {
+  const roleProject = (): ProjectFile => {
+    const engine = new RuleBasedEngine();
+    let memory = engine.createMemory();
+    let model = createEmptyModel('role-del', { businessName: 'Hartwell (FIXTURE)', ownerName: 'Ray (fictional)' }, 'Bookkeeper');
+    let r = engine.ingestAnswer(memory, model, 's1', 'role-1',
+      'First thing every morning I reconcile the bank feed before anyone else is in the building.');
+    memory = r.memory; model = r.model;
+    return { formatVersion: PROJECT_FORMAT_VERSION, model, sessions: [], interviewMemory: memory };
+  };
+
+  it('titles speak about the role; ids stay stable', () => {
+    const { rendered } = renderPackage(roleProject());
+    const byId = Object.fromEntries(rendered.map((d) => [d.id, d.title]));
+    expect(byId['handbook']).toBe('The Role Handbook');
+    expect(byId['first-year']).toBe('The First Year in the Role');
+    expect(byId['risk-report']).toBe('Knowledge Risk Report');
+    expect(rendered.length).toBe(9);
+  });
+
+  it('the header names the role, not a person, and audits clean', () => {
+    const { rendered } = renderPackage(roleProject());
+    const handbook = rendered.find((d) => d.id === 'handbook')!;
+    expect(handbook.markdown).toContain('documenting the role of Bookkeeper');
+    expect(handbook.markdown).not.toContain('prepared from the words of Ray');
+    for (const d of rendered) {
+      expect(auditRendered(d, roleProject().model), d.title).toEqual([]);
+    }
+  });
+
+  it('the handbook quotes the role tracks, and owner tracks are absent', () => {
+    const project = roleProject();
+    const handbook = renderPackage(project).rendered.find((d) => d.id === 'handbook')!;
+    expect(handbook.markdown).toContain('The Job As It Really Is');
+    expect(handbook.markdown).toContain('reconcile the bank feed');
+    expect(handbook.markdown).not.toContain('The Business As It Really Runs');
+  });
+
+  it('owner projects are byte-for-byte unaffected by the role machinery', () => {
+    const project = fixtureProject();
+    const titles = renderPackage(project).rendered.map((d) => d.title);
+    expect(titles).toContain("The Successor's Handbook");
+    expect(titles).toContain('First Year Without the Founder');
+  });
+});

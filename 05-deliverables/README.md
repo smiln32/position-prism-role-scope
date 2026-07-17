@@ -15,6 +15,12 @@ Generated fixture package: 07-testing/stage6-package/
 6. Institutional Memory Archive - history, scar tissue, commitments/handshakes
 7. Continuity & Emergency Brief - what breaks first, single points of failure,
    who to call, relationships, systems and where access lives (never credentials)
+Since 2026-07-17: every document also downloads as a REAL PDF (pdfmake,
+lazy-loaded; standard Times fonts, no embedded files), singly or as one
+package file - and role projects (subjectRole != 'owner') render the same
+nine documents with job-focused titles and ROLE_TRACKS quotes. See
+DECISIONS.md 2026-07-17.
+
 8. Knowledge Risk Report - full risk record + open questions, with the
    published Stage 7 scoring formula (04-model-views/README.md)
 9. AI-Ready Knowledge Export - the lossless model JSON
