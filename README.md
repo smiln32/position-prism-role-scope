@@ -157,7 +157,8 @@ Planned input types (not yet built):
 **The design constraint that governs all of these:** the promise that nothing
 leaves your computer. Each input type has a fully-local path (in-browser OCR and
 transcription) and a faster, more accurate cloud path. The intended approach
-mirrors the existing optional AI adapter — **local-first by default, and any
+mirrors the optional AI interview adapter (built and unit-tested on a draft
+branch, PR #3 — **not yet part of the app**): **local-first by default, and any
 cloud processing is strictly opt-in, with the owner's own key, never stored.**
 No input capability will quietly send private business knowledge off the machine.
 
@@ -174,7 +175,8 @@ npm test         # full suite, including the end-to-end acceptance run
 npm run lint
 ```
 
-The governing documents live in [`00-control/`](00-control/) — read
-`CLAUDE.md` before changing anything. The knowledge-model schema
+Read [`CLAUDE.md`](CLAUDE.md) (repo root) before changing anything; the rest of
+the governing documents live in [`00-control/`](00-control/), and the stage map
+is [`CONTEXT.md`](CONTEXT.md). The knowledge-model schema
 (`app/src/knowledge-model/`) is **frozen at v1.0.0**; changing it requires a
 logged decision in `00-control/DECISIONS.md`.
