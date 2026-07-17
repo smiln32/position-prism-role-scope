@@ -229,3 +229,9 @@ follow-up threads, memory-only key with home-screen panel, guarded live test
 (llm.live.test.ts - owner runs with his key). Question rewording dropped
 deliberately (operator reads questions aloud). Suite 154 -> 166 + 1 guarded
 live. Remaining: the owner's live run, then merge.
+
+2026-07-17 session close: HANDOFF-2026-07-17.md is the live snapshot.
+Assisted interviewing built (llm.ts, 166 tests + guarded live test);
+awaiting the owner's live key run, then merge. Role Package reports
+(Job Description / SOPs / Training Guide / Commitment Register) proposed,
+awaiting owner go. PR #13 open; assisted-interviewing branch stacked on it.
