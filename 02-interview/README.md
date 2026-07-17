@@ -47,6 +47,14 @@ Tracks can be taken in any order; a session picks one track per sitting.
    = areas answered / areas in the selected track (8 for Track 1, 6 for the
    rest; 50 across all eight). The interview reports complete only when
    every track's areas are covered and the queue is empty.
+5b. ASSISTED INTERVIEWING (optional, 2026-07-17): with the operator's own
+   Anthropic API key (claude-haiku-4-5, memory-only, never stored), each
+   answer is also reviewed by the model AFTER the verbatim floor is saved:
+   structured drafts across all seven non-interview entity types (inferred/
+   low/unverified, owner promotes via setVerified) plus up to 3 clarifying
+   questions per answer, each queued as a follow-up thread the next sitting
+   asks first. Failure costs nothing - the floor is already saved. See
+   llm.ts and DECISIONS.md 2026-07-17.
 6. Track 7 ("Risks & Fragilities") answers additionally become
    owner-declared RiskEntities - verbatim, source 'interview', high
    confidence, unverified - because those six questions ask about risk in

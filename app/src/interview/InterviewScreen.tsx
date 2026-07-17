@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RuleBasedEngine, trackSetFor, trackById } from './engine';
+import type { AssistedExtraction } from './llm';
 import type { ProjectFile, SessionMeta } from '../project/store';
 
 export default function InterviewScreen({
-  project, session, onSave, onBack,
+  project, session, onSave, onBack, assist,
 }: {
   project: ProjectFile;
   session: SessionMeta;
   onSave: (next: ProjectFile) => void;
   onBack: () => void;
+  /** Optional assisted-interviewing layer (memory-only API key upstream). */
+  assist?: AssistedExtraction;
 }) {
   const engine = useMemo(() => new RuleBasedEngine(), []);
   const [trackId, setTrackId] = useState<string | null>(session.trackId ?? null);
@@ -16,6 +19,7 @@ export default function InterviewScreen({
   const [lastExtract, setLastExtract] = useState('');
   const [revisitAreaId, setRevisitAreaId] = useState<string | null>(null);
   const [nudge, setNudge] = useState('');
+  const [assistBusy, setAssistBusy] = useState(false);
 
   const memory = project.interviewMemory ?? engine.createMemory();
 
@@ -80,7 +84,8 @@ export default function InterviewScreen({
   const questionText = revisitAreaId ? engine.revisitQuestion(trackId, revisitAreaId) : q.question;
   const showInput = revisitAreaId !== null || q.areaId !== 'done';
 
-  const submit = () => {
+  const submit = async () => {
+    if (assistBusy) return;
     if (!answer.trim()) {
       setNudge('Take your time - whenever you are ready, write your answer above and submit it.');
       return;
@@ -108,7 +113,27 @@ export default function InterviewScreen({
     if (gaps - contradictions > 0) parts.push(`${gaps - contradictions} name${gaps - contradictions === 1 ? '' : 's'} we will ask about`);
     if (risks) parts.push(`${risks} thing${risks === 1 ? '' : 's'} only you handle, noted`);
     setLastExtract(parts.join(' · '));
+    // The verbatim floor is SAVED before any network call - assisted review can
+    // only ever add to it, and a failure costs nothing but the enrichment.
     onSave(nextProject);
+
+    if (assist && result.qa.answer.trim()) {
+      setAssistBusy(true);
+      try {
+        const enriched = await assist.enrich(result.model, result.memory, result.qa);
+        if (enriched.drafts + enriched.flags > 0) {
+          onSave({ ...nextProject, model: enriched.model, interviewMemory: enriched.memory });
+          const assistParts: string[] = [];
+          if (enriched.drafts) assistParts.push(`${enriched.drafts} structured draft${enriched.drafts === 1 ? '' : 's'} to review`);
+          if (enriched.flags) assistParts.push(`${enriched.flags} clarifying question${enriched.flags === 1 ? '' : 's'} queued for next time`);
+          setLastExtract((prev) => [prev, `assisted: ${assistParts.join(', ')}`].filter(Boolean).join(' · '));
+        }
+      } catch {
+        setLastExtract((prev) => [prev, 'assisted review unavailable - the answer is saved normally'].filter(Boolean).join(' · '));
+      } finally {
+        setAssistBusy(false);
+      }
+    }
   };
 
   const answeredAreas = memory.trackProgress[trackId]?.answeredAreas ?? [];
@@ -144,7 +169,9 @@ export default function InterviewScreen({
               aria-label="Your answer"
             />
             <div className="row" style={{ marginTop: '0.75rem' }}>
-              <button className="primary" onClick={submit}>That's my answer</button>
+              <button className="primary" onClick={() => { void submit(); }} disabled={assistBusy}>
+                {assistBusy ? 'Reviewing the answer…' : "That's my answer"}
+              </button>
               {revisitAreaId && (
                 <button className="quiet" onClick={() => setRevisitAreaId(null)}>Never mind</button>
               )}

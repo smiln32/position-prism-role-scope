@@ -863,3 +863,39 @@ yet confirmed by the owner". The selection persists across adds (one answer
 often yields several entries - the Henderson answer held two commitments)
 and is cleared explicitly. Owner mode never sees the workbench. 150 -> 154
 tests. | Done.
+
+2026-07-17 | Assisted interviewing revived (Claude Code, owner-directed: "the
+app composes, you review, the owner confirms") | The archived PR #3 ported
+onto master - by rewriting against today's code, never by merging the stale
+branch (it predates PRs #4-#9). Model: claude-haiku-4-5 per the original
+2026-07-10 cost ruling; ~pennies per interview on the operator's own key.
+DESIGN CHANGE from the draft, deliberate and better: the adapter is an
+ENRICHMENT LAYER, not an engine replacement. RuleBasedEngine keeps ALL
+bookkeeping (question selection, coverage, completion, the verbatim Fact
+floor) and InterviewScreen SAVES the floor BEFORE any network call; the model
+is consulted after, additively, so a failure can never cost captured
+knowledge and the UI stays synchronous except for the enrichment step (the
+"async UI path" that the draft never verified shrinks to one busy state).
+The draft's question-rewording feature was DROPPED, not deferred silently:
+in the service model the operator reads questions aloud, so warm rewording
+buys nothing; EXPANSION-HANDOFF item C closes with it. Scope delivered:
+(a) structured drafts across ALL SEVEN entity types the interview cannot
+create - the draft handled 3 and omitted commitments, the highest-value
+output; every draft is source 'inferred', confidence 'low', verified=false,
+promotable only via setVerified; the extraction prompt forbids recording
+credentials (systems record only where access lives). (b) CLARIFICATION
+FLAGGING as scoped in EXPANSION-HANDOFF SS6A: the model returns up to
+MAX_FLAGS_PER_ANSWER=3 questions about what the answer left ambiguous (P4
+noise cap); each becomes an inferred queued GapEntity plus a pendingThread
+on the same track/area, so the NEXT sitting opens by asking it - tested
+end-to-end (nextQuestion returns the flag). (c) Key handling: React state in
+MainApp only, memory-only per sitting, never written anywhere (rule 11);
+home-screen panel mirrors SecurityPanel, discloses that answers go to
+Anthropic while on, and offers "Turn off and forget the key". (d) LIVE
+verification is a guarded vitest file (llm.live.test.ts) that runs the real
+client against the real API only when ANTHROPIC_API_KEY is in the
+environment - the owner runs it locally with his key; skipped in CI and
+normal runs. 154 -> 166 tests + 1 guarded live. Frozen schema untouched;
+initial bundle 70.0 -> 72.7 KB gzip (the llm module + panel; accepted -
+lazy-loading a 3KB module bought nothing). | Done pending the owner's live
+run.

@@ -21,6 +21,7 @@ import {
   type StorageLike,
 } from './project/store';
 import { EncryptedStorage, isVaultConfigured, VAULT_KEY } from './project/vault';
+import { AssistedExtraction, createAnthropicClient, ASSIST_MODEL } from './interview/llm';
 
 type Screen =
   | { name: 'home' }
@@ -99,6 +100,15 @@ function MainApp({ storage, security }: { storage: StorageLike; security: Securi
   const [refresh, setRefresh] = useState(0);
   const bump = () => setRefresh((n) => n + 1);
 
+  // Assisted interviewing: the API key lives HERE and only here - React state,
+  // memory-only for the sitting, never written to storage or the project file
+  // (rule 11: no stored credentials). Closing the app forgets it.
+  const [assistKey, setAssistKey] = useState<string | null>(null);
+  const assist = useMemo(
+    () => (assistKey ? new AssistedExtraction(createAnthropicClient(() => assistKey)) : undefined),
+    [assistKey],
+  );
+
   // Every screen swap starts a fresh page, so send the reader back to the top.
   // Without this the browser keeps the prior scroll position and the new screen
   // (often shorter) opens part-way down. Keyed on `screen`, not `refresh`, so an
@@ -111,7 +121,8 @@ function MainApp({ storage, security }: { storage: StorageLike; security: Securi
     <main>
       <Suspense fallback={<p className="muted" style={{ padding: '1rem 0' }}>Opening…</p>}>
         {screen.name === 'home' && (
-          <HomeScreen key={refresh} store={store} go={setScreen} security={security} />
+          <HomeScreen key={refresh} store={store} go={setScreen} security={security}
+            assistKey={assistKey} onAssistKey={setAssistKey} />
         )}
         {screen.name === 'new-project' && (
           <NewProjectScreen store={store} go={setScreen} />
@@ -123,7 +134,7 @@ function MainApp({ storage, security }: { storage: StorageLike; security: Securi
         {screen.name === 'interview' && (
           <InterviewRoute key={`${screen.projectId}-${screen.sessionId}`} store={store}
             projectId={screen.projectId} sessionId={screen.sessionId}
-            go={setScreen} changed={bump} />
+            go={setScreen} changed={bump} assist={assist} />
         )}
         {screen.name === 'documents' && (
           <DocumentsRoute key={`docs-${screen.projectId}-${refresh}`} store={store}
@@ -154,9 +165,10 @@ function MainApp({ storage, security }: { storage: StorageLike; security: Securi
 }
 
 function HomeScreen({
-  store, go, security,
+  store, go, security, assistKey, onAssistKey,
 }: {
   store: ProjectStore; go: (s: Screen) => void; security: Security;
+  assistKey: string | null; onAssistKey: (key: string | null) => void;
 }) {
   const [error, setError] = useState('');
   const [deletedNote, setDeletedNote] = useState('');
@@ -221,6 +233,7 @@ function HomeScreen({
       {error && <p className="small" style={{ color: '#8b2f2f', marginTop: '0.75rem' }}>{error}</p>}
 
       <SecurityPanel security={security} />
+      <AssistPanel assistKey={assistKey} onAssistKey={onAssistKey} />
 
       <p className="small muted" style={{ marginTop: '2.5rem' }}>
         <a href="#inspector" onClick={(e) => { e.preventDefault(); go({ name: 'inspector' }); }}>
@@ -233,6 +246,59 @@ function HomeScreen({
 }
 
 const RED = '#8b2f2f';
+
+/**
+ * Home-screen control for assisted interviewing. The pasted key is held in
+ * React state upstream (memory only, per sitting) and is never written to
+ * storage or the project file - closing the app forgets it. While assisted
+ * mode is on, each submitted answer is sent to Anthropic's API under this
+ * key for structured drafting; everything it returns is marked inferred and
+ * unverified until the owner confirms it.
+ */
+function AssistPanel({ assistKey, onAssistKey }: {
+  assistKey: string | null; onAssistKey: (key: string | null) => void;
+}) {
+  const [draft, setDraft] = useState('');
+
+  if (assistKey) {
+    return (
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <p style={{ marginBottom: '0.35rem' }}>Assisted interviewing is on</p>
+        <p className="small muted" style={{ marginBottom: '0.6rem' }}>
+          While on, each submitted answer is also sent to Anthropic
+          ({ASSIST_MODEL}) to draft structured entries and clarifying
+          questions - all marked &ldquo;needs verification&rdquo; until confirmed. The key
+          is held in memory only and is forgotten when the app closes.
+        </p>
+        <button className="quiet" onClick={() => onAssistKey(null)}>
+          Turn off and forget the key
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="card" style={{ marginTop: '1.5rem' }}>
+      <p style={{ marginBottom: '0.35rem' }}>Assisted interviewing <span className="muted">(optional)</span></p>
+      <p className="small muted" style={{ marginBottom: '0.6rem' }}>
+        With your own Anthropic API key, each answer is also reviewed by an AI
+        that drafts the structured entries (commitments, processes, systems…)
+        and flags what needs a follow-up question - saving the by-hand
+        structuring pass. Costs pennies per interview on your key. Answers are
+        sent to Anthropic only while this is on. The key is never stored:
+        paste it each sitting, and it is forgotten when the app closes.
+      </p>
+      <div className="row">
+        <input type="password" value={draft} placeholder="sk-ant-…"
+          aria-label="Anthropic API key"
+          onChange={(e) => setDraft(e.target.value)} style={{ flex: 1 }} />
+        <button disabled={!draft.trim().startsWith('sk-ant-')}
+          onClick={() => { onAssistKey(draft.trim()); setDraft(''); }}>
+          Turn on
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Owner-directed project deletion, gated the way the custody protocol demands
@@ -738,10 +804,11 @@ function ProjectScreen({
 }
 
 function InterviewRoute({
-  store, projectId, sessionId, go, changed,
+  store, projectId, sessionId, go, changed, assist,
 }: {
   store: ProjectStore; projectId: string; sessionId: string;
   go: (s: Screen) => void; changed: () => void;
+  assist?: AssistedExtraction;
 }) {
   const [project, setProject] = useState<ProjectFile | null>(() => {
     try { return store.load(projectId); } catch { return null; }
@@ -767,6 +834,7 @@ function InterviewRoute({
     <InterviewScreen
       project={project}
       session={session}
+      assist={assist}
       onSave={(next) => {
         next.model.updatedAt = new Date().toISOString();
         store.save(next);
