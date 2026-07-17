@@ -66,6 +66,24 @@ archive; both branches retained on origin - #3 is deferred-not-rejected, see
 DECISIONS.md 2026-07-16 for the port-don't-merge revival note).
 Still open, needs the owner: the org rollup (multi-model renderer - new
 feature), P2-A/engagement types, real PDF export, pushing the branches.
+
+2026-07-17 (feature/role-interviews branch): the owner-approved pre-pilot
+batch, five commits, suite 131 -> 154. All logged in DECISIONS.md 2026-07-17.
+- ROLE INTERVIEWS: role-holder-first principle; ROLE_TRACKS (7 tracks / 44
+  areas); trackSetFor(subjectRole); NewProjectScreen subject choice. No
+  schema change - subjectRole carries the role title, names are attribution.
+- DELETION CAUTION + CUSTODY: the app's first-ever delete (remove() was
+  wired to nothing), gated behind identify/warn/export/attest;
+  08-docs/CUSTODY.md holds the per-engagement protocol.
+- REAL PDF EXPORT: pdfmake 0.3 (first runtime dependency, logged), lazy
+  chunks only, standard-14 Times fonts, pure markdown converter, real-bytes
+  test. Role projects render job-focused deliverables (The Role Handbook,
+  The First Year in the Role); owner output byte-identical.
+- OPERATOR POLISH: ProjectFile.operatorName (additive) persists the name
+  between sittings; TranscriptSourcePicker workbench threads the chosen
+  verbatim answer into each structured entry's SourceRef.
+Next milestone: the pilot. Owner's parallel items: exit-planner
+conversation, engagement letter (custody + keep-nothing terms).
 Next stage: none in the staged build. The path from prototype to shippable
 product is now tracked in PATH-TO-SHIP.md (three owner decisions + Tiers 1-4).
 Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
