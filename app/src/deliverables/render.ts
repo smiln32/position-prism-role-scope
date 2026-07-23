@@ -131,6 +131,23 @@ function quoteArea(doc: Doc, project: ProjectFile, trackId: string, areaId?: str
   doc.p(asked ? NOT_CAPTURED : NOT_ASKED);
 }
 
+/**
+ * Quote every fact across several areas of one track under a single heading,
+ * saying "Not yet captured" / "not asked" only once for the whole group. The
+ * Role Package reports gather answers from a handful of related areas into one
+ * section, and a stack of identical empty-state lines read as broken. The group
+ * counts as "asked" if any one of its areas was reached.
+ */
+function quoteAreas(doc: Doc, project: ProjectFile, trackId: string, areaIds: string[]): void {
+  const facts = areaIds.flatMap((a) => topicFacts(project.model, trackId, a));
+  if (facts.length > 0) {
+    for (const f of facts) doc.quote(f.statement, mark(f));
+    return;
+  }
+  const asked = areaIds.some((a) => areaAnswered(project, trackId, a));
+  doc.p(asked ? NOT_CAPTURED : NOT_ASKED);
+}
+
 /* ------------------------------------------------------------------ */
 
 function executiveSummary(doc: Doc, project: ProjectFile): void {
@@ -364,6 +381,143 @@ function aiExport(doc: Doc, project: ProjectFile): void {
   doc.raw('```');
 }
 
+/* ---- The Role Package: role-only reports (DECISIONS.md 2026-07-23) ------- */
+
+/**
+ * Three reports that exist only for role projects (a client's role-holder, not
+ * the owner). They quote the ROLE_TRACKS area ids directly - deliverablesFor()
+ * appends them for non-owner projects only, so the owner variants never run.
+ * Like every deliverable they render EXCLUSIVELY from the model: each renderer
+ * registers only verbatim model strings via doc.c(), so the zero-invention
+ * audit covers them unchanged, and empty sections say "Not yet captured" (or
+ * "not asked yet" where the interview simply never reached the area). A
+ * Commitment Register is folded into the Job Description rather than shipped as
+ * a fourth document, matching the handoff scope.
+ */
+
+function jobDescription(doc: Doc, project: ProjectFile): void {
+  const m = project.model;
+  doc.p('A description of this role as it is actually performed - built only from what the person who does it said, and from the record on file. Where something has not been captured, it says so rather than filling the gap.');
+
+  doc.h2('What this role is');
+  quoteAreas(doc, project, 'role-1', ['daily', 'weekly']);
+
+  doc.h2('What only this person can do right now');
+  quoteAreas(doc, project, 'role-1', ['only-you']);
+
+  doc.h2('Core responsibilities');
+  if (m.entities.processes.length === 0) doc.notCaptured();
+  else for (const p of m.entities.processes) {
+    doc.bullet(`${doc.c(p.name)} - ${doc.c(p.purpose)} (${doc.c(p.frequency)})${mark(p)}`);
+  }
+  doc.gap();
+
+  doc.h2('Decisions this role owns');
+  if (m.entities.decisions.length === 0) doc.notCaptured();
+  else for (const d of m.entities.decisions) doc.bullet(`${doc.c(d.name)}: ${doc.c(d.howDecided)}${mark(d)}`);
+  doc.gap();
+  quoteAreas(doc, project, 'role-4', ['own-calls', 'escalate']);
+
+  doc.h2('People and handoffs');
+  quoteAreas(doc, project, 'role-3', ['work-in', 'work-out']);
+  for (const r of m.entities.relationships) doc.bullet(`${doc.c(r.who)} (${doc.c(r.category)})${mark(r)}`);
+  doc.gap();
+
+  doc.h2('Systems and tools used');
+  if (m.entities.systems.length === 0) doc.notCaptured();
+  else for (const s of m.entities.systems) {
+    doc.bullet(`${doc.c(s.name)} (${doc.c(s.kind)}): ${doc.c(s.whatItDoes)} - access: ${doc.c(s.accessHeldBy)}${mark(s)}`);
+  }
+  doc.gap();
+  quoteAreas(doc, project, 'role-1', ['tools']);
+
+  doc.h2('Commitments this role carries (Commitment Register)');
+  const commitments = m.entities.commitments;
+  if (commitments.length === 0) doc.notCaptured();
+  else for (const c of commitments) {
+    doc.bullet(`With ${doc.c(c.withWhom)}: ${doc.c(c.whatWasPromised)} (${doc.c(c.direction)}; ${c.writtenDown ? 'written down' : 'not written down'})${mark(c)}`);
+  }
+  doc.gap();
+
+  doc.h2('The unwritten parts of the job');
+  quoteAreas(doc, project, 'role-1', ['unwritten']);
+}
+
+function standardOperatingProcedures(doc: Doc, project: ProjectFile): void {
+  const m = project.model;
+  doc.p('One procedure per process on record, written the way the role-holder actually does the work. Every step is theirs; nothing here is invented. Procedures still being captured show what is on file so far.');
+  if (m.entities.processes.length === 0) {
+    doc.notCaptured();
+    doc.p('No process has been structured yet. Whatever the role-holder said about how the work gets done is preserved verbatim below and in the Role Handbook.');
+  }
+  for (const p of m.entities.processes) {
+    doc.h2(`${doc.c(p.name)}${mark(p)}`);
+    doc.p(`Purpose: ${doc.c(p.purpose)}`);
+    doc.p(`How often: ${doc.c(p.frequency)}`);
+    if (p.steps.length > 0) {
+      doc.p('Steps:');
+      for (const step of p.steps) doc.bullet(`${step.order}. ${doc.c(step.description)}`);
+      doc.gap();
+    }
+    if (p.dependencies.length > 0) {
+      doc.p('Depends on:');
+      for (const dep of p.dependencies) doc.bullet(doc.c(dep));
+      doc.gap();
+    }
+    if (p.failurePoints.length > 0) {
+      doc.p('Where it goes wrong:');
+      for (const fp of p.failurePoints) doc.bullet(doc.c(fp));
+      doc.gap();
+    }
+    if (p.whoElseKnows.length > 0) {
+      doc.p('Who else knows this:');
+      for (const who of p.whoElseKnows) doc.bullet(doc.c(who));
+      doc.gap();
+    }
+  }
+  doc.h2("In the role-holder's own words on how the work gets done");
+  quoteAreas(doc, project, 'role-2', ['main-process', 'order-why', 'quality', 'workarounds', 'sop-wrong', 'busy-day']);
+}
+
+function trainingGuide(doc: Doc, project: ProjectFile): void {
+  const m = project.model;
+  doc.p('A path for whoever takes this role next - drawn entirely from what the person who does it now chose to pass on. It tells them where to start, what to absorb, and what to leave alone.');
+
+  doc.h2('The first ninety days');
+  quoteAreas(doc, project, 'role-7', ['first-90']);
+
+  doc.h2('Who to meet, and in what order');
+  quoteAreas(doc, project, 'role-7', ['meet-first']);
+  for (const r of m.entities.relationships) doc.bullet(`${doc.c(r.who)} (${doc.c(r.category)}) - ${doc.c(r.whatTheyExpect)}${mark(r)}`);
+  doc.gap();
+
+  doc.h2('What to learn first');
+  if (m.entities.processes.length === 0) doc.notCaptured();
+  else for (const p of m.entities.processes) doc.bullet(`${doc.c(p.name)} - ${doc.c(p.purpose)}${mark(p)}`);
+  doc.gap();
+  quoteAreas(doc, project, 'role-2', ['quality']);
+
+  doc.h2('Judgment to absorb');
+  for (const call of m.entities.judgments) doc.quote(call.heuristic, `${call.context ? ` - ${doc.c(call.context)}` : ''}${mark(call)}`);
+  quoteAreas(doc, project, 'role-4', ['instincts', 'got-right']);
+
+  doc.h2('What to change slowly');
+  quoteAreas(doc, project, 'role-7', ['change-slowly']);
+
+  doc.h2('What should never change');
+  quoteAreas(doc, project, 'role-7', ['never-change']);
+
+  doc.h2("Advice in the role-holder's own words");
+  quoteAreas(doc, project, 'role-7', ['advice']);
+
+  doc.h2('Old wounds to avoid');
+  quoteAreas(doc, project, 'role-6', ['old-wounds']);
+  for (const item of m.entities.history) {
+    doc.p(`**${doc.c(item.when)}** - ${doc.c(item.whatHappened)}${mark(item)}`);
+    doc.p(`What was learned: ${doc.c(item.whatWasLearned)}`);
+  }
+}
+
 /* ------------------------------------------------------------------ */
 
 interface Def { id: string; title: string; render: (doc: Doc, project: ProjectFile) => void; }
@@ -392,9 +546,24 @@ const ROLE_TITLES: Record<string, string> = {
   'relationship-map': 'Relationship & Handoff Map',
 };
 
+/**
+ * The Role Package - three reports that only make sense for a role project and
+ * have no owner-project equivalent (DECISIONS.md 2026-07-23). Appended after
+ * the shared nine, so their ids never collide and per-doc versioning behaves
+ * exactly as before. Owner projects never see them.
+ */
+export const ROLE_PACKAGE: Def[] = [
+  { id: 'job-description', title: 'Job Description', render: jobDescription },
+  { id: 'sops', title: 'Standard Operating Procedures', render: standardOperatingProcedures },
+  { id: 'training-guide', title: 'Training & Onboarding Guide', render: trainingGuide },
+];
+
 export function deliverablesFor(project: ProjectFile): Def[] {
   if (isOwnerProject(project)) return DELIVERABLES;
-  return DELIVERABLES.map((d) => ({ ...d, title: ROLE_TITLES[d.id] ?? d.title }));
+  return [
+    ...DELIVERABLES.map((d) => ({ ...d, title: ROLE_TITLES[d.id] ?? d.title })),
+    ...ROLE_PACKAGE,
+  ];
 }
 
 export function renderDeliverable(def: Def, project: ProjectFile, version: number): Rendered {

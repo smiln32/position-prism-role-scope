@@ -1,6 +1,6 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-16
+Last updated: 2026-07-23
 Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
 Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; PRs #7/#9/#10 merged
 2026-07-15 (perf code-split, scroll-to-top UX fix, README + .env gitignore).
@@ -220,3 +220,23 @@ Future work proceeds via HANDOFF-2026-07-15.md and new logged decisions.
 - Spec amendment 2026-07-10: builder proceeds automatically between stages.
 - Stage 2: complete 2026-07-10 under the amendment; gate report delivered
   with the Stage 2/3 zip for after-the-fact audit.
+
+2026-07-23 (feature/role-package branch, off master@PR#13): the Role Package
+APPROVED and BUILT (DECISIONS.md 2026-07-23), split out from the assisted
+branch so it ships INDEPENDENTLY of the pending LLM live run. Three role-only
+deliverables now render for role projects, appended after the shared nine
+(owner projects byte-for-byte unchanged):
+- Job Description (with the Commitment Register folded in), Standard Operating
+  Procedures (one per process, numbered steps), Training & Onboarding Guide.
+- render.ts: new renderers + a quoteAreas() helper (one honest empty-state line
+  per grouped section); deliverablesFor() appends ROLE_PACKAGE for non-owner
+  projects only. Zero-invention audit covers them unchanged (only verbatim
+  model strings via Doc.c()). PDF/markdown/read paths are generic - no pdf.ts
+  change. DeliverablesScreen "nine documents" copy now computed (9 owner / 12
+  role). Frozen schema untouched.
+- Tests: +6 (a richRoleProject fixture, full audit-clean assertion, per-report
+  field checks, owner-exclusion, unstarted-project honesty). Suite 154 -> 160.
+  Build + lint clean.
+- The LLM adapter (assisted interviewing) stays behind on
+  feature/assisted-interviewing, awaiting the owner's live-key run; org-level
+  reports remain deferred (need the multi-model reader).
