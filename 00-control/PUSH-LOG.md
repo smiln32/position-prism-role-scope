@@ -39,3 +39,22 @@ AFTER-SHA (or its `prepush-…` tag). Every after-sha below is a safe anchor.
 ---
 
 <!-- push-log.ps1 appends entries below this line -->
+
+## 2026-07-23 13:20 - feature/assisted-interviewing -> origin
+
+- Pushed: 86588e4..82f5979 (4 commit(s))
+  - 82f5979 chore: add push-log.ps1 + PUSH-LOG.md — reversible push ledger
+  - ff13352 docs: archive the original master build prompt
+  - 699c3fb chore: add where-we-stand.ps1 snapshot generator
+  - 6b8a656 feat: the Role Package — three role-only deliverables
+- origin/feature/assisted-interviewing BEFORE this push: 86588e4  (rollback anchor tag: prepush-feature-assisted-interviewing-20260723-132041)
+- origin/feature/assisted-interviewing AFTER this push:  82f5979
+
+**Undo this push (restore the remote):**
+```
+git push origin 86588e4:feature/assisted-interviewing --force-with-lease
+```
+**Also move your local branch back (optional):**
+```
+git reset --hard 86588e4
+```
