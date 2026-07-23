@@ -77,6 +77,7 @@ not a missing feature. Tracked as ICM-09 in `ICM-AUDIT-LOG.md`.
 | Current build state | `00-control/STATE.md` |
 | Latest session snapshot | `00-control/HANDOFF-2026-07-17.md` |
 | What to pick up next | `00-control/NEXT-STEPS.md` |
+| How to undo a push (push ledger) | `00-control/PUSH-LOG.md` (written by `push-log.ps1`) |
 | Roadmap + non-negotiables (long form) | `00-control/EXPANSION-HANDOFF.md` |
 | Prototype → shippable product plan | `00-control/PATH-TO-SHIP.md` |
 | Newcomer orientation | `README.md` |
