@@ -863,3 +863,33 @@ yet confirmed by the owner". The selection persists across adds (one answer
 often yields several entries - the Henderson answer held two commitments)
 and is cleared explicitly. Owner mode never sees the workbench. 150 -> 154
 tests. | Done.
+
+---
+
+2026-07-23 | Expansion | The Role Package: three role-only deliverables added
+- Job Description, Standard Operating Procedures (one per process), and
+Training & Onboarding Guide, with a Commitment Register folded into the Job
+Description. Proposed in HANDOFF-2026-07-17 ("Open decision: the Role
+Package"), APPROVED by the owner ("create the role package reports"). SHIPPED
+INDEPENDENTLY via feature/role-package (branched off master after PR #13), so
+it reaches master without waiting on the assisted-interviewing LLM live run -
+the Role Package code is self-contained and touches none of the adapter's
+files (render.ts / render.test.ts / DeliverablesScreen.tsx vs llm.ts /
+App.tsx / InterviewScreen.tsx). Scope and constraints: (a) role-only -
+deliverablesFor() appends them ONLY for non-owner projects, after the shared
+nine, so ids never collide, per-doc versioning is unchanged, and owner
+projects are byte-for-byte unaffected (existing test still green). (b) Zero
+invention preserved - each renderer registers only verbatim model strings via
+Doc.c(), so auditRendered covers them with no change; a new richRoleProject
+fixture drives a full audit-clean assertion, and an unstarted role project
+asserts "Not yet captured". (c) A new quoteAreas() helper gathers several
+related areas of one track under one heading with a SINGLE honest empty-state
+line ("Not yet captured" vs "not asked yet" via interviewMemory). (d) The
+Commitment Register is a SECTION of the Job Description, not a fourth document
+- matches the handoff's "+ fold in" and keeps the count at three new reports.
+(e) PDF/markdown/read paths are generic over Rendered[], so the three reports
+export with no pdf.ts change; DeliverablesScreen's hardcoded "nine documents"
+copy is now computed from deliverablesFor(project).length (9 owner / 12 role).
+Frozen schema untouched. Org-level reports (SPOF register, contradiction map,
+access inventory) remain DEFERRED - they need the multi-model reader, never
+mergeModels. Suite 154 -> 160 (+6); build + lint clean. | Done.

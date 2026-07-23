@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { renderPackage, DISCLAIMER, type Rendered } from './render';
+import { renderPackage, deliverablesFor, DISCLAIMER, type Rendered } from './render';
 import { downloadPdf } from './pdf';
 import { exportModel } from '../knowledge-model/model';
 import type { ProjectFile } from '../project/store';
@@ -54,6 +54,7 @@ export default function DeliverablesScreen({
 
   const safeName = project.model.profile.businessName.replace(/[^A-Za-z0-9 ]/g, '').trim().replace(/ +/g, '-');
   const open = docs?.find((d) => d.id === openId) ?? null;
+  const docCount = deliverablesFor(project).length;
 
   if (open) {
     return (
@@ -76,7 +77,7 @@ export default function DeliverablesScreen({
       <button className="quiet" onClick={onBack}>← Back to project</button>
       <h1 style={{ marginTop: '1rem' }}>The succession package</h1>
       <p className="why">
-        Why a package: nine documents, each a different view of the same
+        Why a package: {docCount} documents, each a different view of the same
         knowledge - everything in your own words, marked wherever a point
         still needs your confirmation, and saying plainly "Not yet captured"
         wherever a question has not been answered. Nothing in them is
