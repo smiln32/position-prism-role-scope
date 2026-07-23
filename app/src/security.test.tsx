@@ -9,7 +9,7 @@ afterEach(cleanup);
 function createProject(name: string) {
   fireEvent.click(screen.getByRole('button', { name: 'Start a new project' }));
   fireEvent.change(screen.getByLabelText('Business name'), { target: { value: name } });
-  fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'Owner (fictional)' } });
+  fireEvent.change(screen.getByLabelText("The owner's name"), { target: { value: 'Owner (fictional)' } });
   fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
 }
 

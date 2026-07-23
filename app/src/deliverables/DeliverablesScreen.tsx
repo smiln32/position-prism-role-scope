@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { renderPackage, DISCLAIMER, type Rendered } from './render';
+import { downloadPdf } from './pdf';
 import { exportModel } from '../knowledge-model/model';
 import type { ProjectFile } from '../project/store';
 
@@ -21,6 +22,21 @@ export default function DeliverablesScreen({
 }) {
   const [docs, setDocs] = useState<Rendered[] | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  // PDF generation is async (the PDF engine loads on first use); one at a time.
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState('');
+
+  const toPdf = async (toRender: Rendered[], filename: string) => {
+    if (pdfBusy) return;
+    setPdfBusy(true); setPdfError('');
+    try {
+      await downloadPdf(toRender, filename);
+    } catch {
+      setPdfError('The PDF could not be generated. The markdown download always works.');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   // Opening a document to read it, or returning to the list, is a full view
   // change within this screen - start it at the top rather than wherever the
@@ -44,6 +60,9 @@ export default function DeliverablesScreen({
       <section>
         <div className="row no-print" style={{ marginBottom: '1rem' }}>
           <button className="quiet" onClick={() => setOpenId(null)}>← All documents</button>
+          <button onClick={() => toPdf([open], `${safeName}-${open.id}-v${open.version}.pdf`)} disabled={pdfBusy}>
+            {pdfBusy ? 'Preparing PDF…' : 'Download PDF'}
+          </button>
           <button onClick={() => download(`${safeName}-${open.id}-v${open.version}.md`, open.markdown)}>Download markdown</button>
           <button onClick={() => window.print()}>Print</button>
         </div>
@@ -71,6 +90,9 @@ export default function DeliverablesScreen({
         </button>
         {docs && (
           <>
+            <button onClick={() => toPdf(docs, `${safeName}-succession-package.pdf`)} disabled={pdfBusy}>
+              {pdfBusy ? 'Preparing PDF…' : 'Download the whole package (PDF)'}
+            </button>
             <button onClick={() => download(`${safeName}-succession-package.md`,
               docs.map((d) => d.markdown).join('\n\n---\n\n'))}>
               Download everything (markdown)
@@ -82,6 +104,7 @@ export default function DeliverablesScreen({
           </>
         )}
       </div>
+      {pdfError && <p className="small" style={{ color: '#8b2f2f' }}>{pdfError}</p>}
 
       {docs && docs.map((d) => (
         <div className="card" key={d.id}>
@@ -91,8 +114,11 @@ export default function DeliverablesScreen({
           </p>
           <div className="row">
             <button onClick={() => setOpenId(d.id)}>Read</button>
+            <button className="quiet" onClick={() => toPdf([d], `${safeName}-${d.id}-v${d.version}.pdf`)} disabled={pdfBusy}>
+              PDF
+            </button>
             <button className="quiet" onClick={() => download(`${safeName}-${d.id}-v${d.version}.md`, d.markdown)}>
-              Download
+              Markdown
             </button>
           </div>
         </div>

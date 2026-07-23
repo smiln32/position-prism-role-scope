@@ -121,8 +121,108 @@ export const TRACKS: TrackDef[] = [
   },
 ];
 
+/**
+ * Role-level interview - for documenting a specific job by interviewing the
+ * person who actually does it. Owner's principle (2026-07-17, DECISIONS.md):
+ * "Each person in a role should be interviewed and the business owner only as
+ * a fallback. Who knows the actual job better?" The owner's account of someone
+ * else's job is secondhand; the role-holder knows the workarounds, the
+ * judgment calls, and what the SOP gets wrong. The owner remains the verifier
+ * (setVerified) and the fallback source for what the role-holder cannot answer.
+ *
+ * The model still documents the ROLE, not the person (the product's original
+ * boundary): the interviewee's name lives in session labels and SourceRef
+ * details - attribution, not identity.
+ */
+export const ROLE_TRACKS: TrackDef[] = [
+  {
+    id: 'role-1', n: 1, title: 'The Job As It Really Is',
+    areas: [
+      { id: 'daily', question: 'Walk me through a normal working day in this job, start to finish. What do you actually do?' },
+      { id: 'weekly', question: 'What do you handle every week that keeps things running - the work that happens because you make it happen?' },
+      { id: 'annual', question: 'Across a full year, what are the busy seasons, deadlines, and rhythms this job has to keep track of?' },
+      { id: 'only-you', question: 'What parts of this job can only you do right now - things nobody else knows how to do, or is allowed to do?' },
+      { id: 'first-break', question: 'If you were away for a month starting tomorrow, what would break first?' },
+      { id: 'tools', question: 'Which systems, software, or equipment do you personally use, and what do you use each one for?' },
+      { id: 'people', question: 'Who do you lean on most to get this job done, and for what?' },
+      { id: 'unwritten', question: 'What parts of this job never show up in the job description, but matter?' },
+    ],
+  },
+  {
+    id: 'role-2', n: 2, title: 'How the Work Gets Done',
+    areas: [
+      { id: 'main-process', question: 'Take the most important recurring task you do and walk me through it, step by step, the way you actually do it.' },
+      { id: 'order-why', question: 'Where does the order of steps matter? What goes wrong when something is done out of order?' },
+      { id: 'quality', question: 'How do you know when the work is right? What do you check before you call something done?' },
+      { id: 'workarounds', question: 'What shortcuts or workarounds have you built up over time that a new person would not know?' },
+      { id: 'sop-wrong', question: 'Where do the written procedures - if any exist - not match how the job really gets done?' },
+      { id: 'busy-day', question: 'When everything hits at once, what do you do first, and what do you deliberately let wait?' },
+    ],
+  },
+  {
+    id: 'role-3', n: 3, title: 'People & Handoffs',
+    areas: [
+      { id: 'work-in', question: 'Where does your work come from - who hands you things, and in what shape do they arrive?' },
+      { id: 'work-out', question: 'Who takes your work when you are done with it, and what do they need from you to do their part?' },
+      { id: 'stuck', question: 'When you get stuck or something unusual comes up, who do you ask, and for what kinds of things?' },
+      { id: 'outsiders', question: 'Which customers, vendors, or other outside people do you deal with directly, and what should the next person know about each?' },
+      { id: 'expectations', question: 'What do the people around this job expect from it that nobody ever wrote down?' },
+      { id: 'coverage', question: 'When you are out sick or on vacation, what actually happens to your work? Who covers, and how well does that go?' },
+    ],
+  },
+  {
+    id: 'role-4', n: 4, title: 'Judgment Calls',
+    areas: [
+      { id: 'own-calls', question: 'What decisions do you make on your own, without asking anyone?' },
+      { id: 'escalate', question: 'What are your rules for when to escalate - the thresholds where you stop and go get someone?' },
+      { id: 'instincts', question: 'What do your instincts catch that a checklist never would? Give me an example.' },
+      { id: 'auto-no', question: 'What do you say no to automatically, and why?' },
+      { id: 'got-right', question: 'Tell me about a call you got right that someone new would probably have gotten wrong. What did you see?' },
+      { id: 'hardest', question: 'What is the hardest recurring decision in this job, and how do you actually make it?' },
+    ],
+  },
+  {
+    id: 'role-5', n: 5, title: 'Problems & Fixes',
+    areas: [
+      { id: 'goes-wrong', question: 'What goes wrong most often in this job, and what do you do about it?', riskKind: 'recurring problem' },
+      { id: 'warning-signs', question: 'What warning signs tell you something is about to go wrong, before it does?' },
+      { id: 'only-fix', question: 'What problems can only you fix right now? What would happen if they came up while you were gone?', riskKind: 'single point of failure' },
+      { id: 'fragile', question: 'What is more fragile in this job than it looks from the outside?', riskKind: 'fragility' },
+      { id: 'slow-leaks', question: 'What problems are slow leaks - not urgent today, but costly if ignored?', riskKind: 'slow leak' },
+      { id: 'call-first', question: 'When something breaks - a system, a machine, a relationship - who do you call first, and why them?' },
+    ],
+  },
+  {
+    id: 'role-6', n: 6, title: 'History & Quirks',
+    areas: [
+      { id: 'why-this-way', question: 'What do you do in a way that looks odd from the outside but exists for a reason? Tell me the reason.' },
+      { id: 'expensive-lesson', question: 'What was the most expensive lesson this job taught you - in money, time, or trust?' },
+      { id: 'tried-failed', question: 'What has been tried in this job that failed? What did it teach?' },
+      { id: 'old-wounds', question: 'Are there old wounds - with people, customers, or vendors - that the next person could step on without knowing?' },
+      { id: 'changed', question: 'How has this job changed over the years, and what old habits no longer fit it?' },
+      { id: 'almost-worked', question: 'What almost worked - something you would tell your replacement not to write off too quickly?' },
+    ],
+  },
+  {
+    id: 'role-7', n: 7, title: 'Handing It Off',
+    areas: [
+      { id: 'advice', question: 'If you could sit your replacement down for one hour, what would you tell them?' },
+      { id: 'first-90', question: 'What should their first ninety days in this job look like? What should they do, and not do?' },
+      { id: 'change-slowly', question: 'What will they want to change immediately that they should change slowly instead?' },
+      { id: 'never-change', question: 'What should never change about how this job is done, no matter who does it?' },
+      { id: 'meet-first', question: 'Who should they meet in their first week, and in what order?' },
+      { id: 'year-later', question: 'A year after you leave this job, what do you most want to still be true about it?' },
+    ],
+  },
+];
+
+/** The track set for a model's subject: the owner's interview, or the role-level one. */
+export function trackSetFor(subjectRole: string): TrackDef[] {
+  return subjectRole === 'owner' ? TRACKS : ROLE_TRACKS;
+}
+
 export function trackById(trackId: string): TrackDef {
-  const t = TRACKS.find((t) => t.id === trackId);
+  const t = TRACKS.find((t) => t.id === trackId) ?? ROLE_TRACKS.find((t) => t.id === trackId);
   if (!t) throw new Error(`Unknown track: ${trackId}`);
   return t;
 }
@@ -282,10 +382,10 @@ export class RuleBasedEngine {
     return { covered: this.progress(memory, trackId).answeredAreas.length, total: t.areas.length };
   }
 
-  allComplete(memory: ProjectInterviewMemory): boolean {
+  allComplete(memory: ProjectInterviewMemory, subjectRole = 'owner'): boolean {
     return (
       memory.pendingThreads.length === 0 &&
-      TRACKS.every((t) => this.progress(memory, t.id).answeredAreas.length === t.areas.length)
+      trackSetFor(subjectRole).every((t) => this.progress(memory, t.id).answeredAreas.length === t.areas.length)
     );
   }
 
@@ -294,10 +394,10 @@ export class RuleBasedEngine {
    * track (oldest first), then uncovered areas, then unresolved threads from
    * other tracks (so nothing is ever forgotten), then done.
    */
-  nextQuestion(memory: ProjectInterviewMemory, trackId: string): NextQuestion {
+  nextQuestion(memory: ProjectInterviewMemory, trackId: string, subjectRole = 'owner'): NextQuestion {
     const track = trackById(trackId);
     const coverage = this.coverage(memory, trackId);
-    const base = { trackId, coverage, allComplete: this.allComplete(memory) };
+    const base = { trackId, coverage, allComplete: this.allComplete(memory, subjectRole) };
 
     const own = memory.pendingThreads.find((f) => f.trackId === trackId);
     if (own) {
@@ -359,7 +459,7 @@ export class RuleBasedEngine {
       areaId = revisitAreaId;
       question = this.revisitQuestion(trackId, revisitAreaId);
     } else {
-      const q = this.nextQuestion(memory, trackId);
+      const q = this.nextQuestion(memory, trackId, model.subjectRole);
       if (q.areaId === 'done') {
         return {
           memory, model,

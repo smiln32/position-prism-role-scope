@@ -2,7 +2,7 @@ import type {
   KnowledgeModel, FactEntity, EntityBase,
 } from '../knowledge-model/schema';
 import { exportModel } from '../knowledge-model/model';
-import { TRACKS } from '../interview/engine';
+import { trackSetFor } from '../interview/engine';
 import { scoreRisk, SCORING_EXPLANATION } from '../dashboard/metrics';
 import type { ProjectFile } from '../project/store';
 
@@ -68,10 +68,39 @@ function mark(e: EntityBase): string {
   return bits.length ? ` *(${bits.join('; ')})*` : '';
 }
 
+/** True when this model documents the owner rather than one role. */
+const isOwnerProject = (project: ProjectFile): boolean => project.model.subjectRole === 'owner';
+
+/**
+ * The subject-facing wording and the track/area ids each renderer quotes.
+ * Owner projects keep every original string; role projects speak about the
+ * role-holder and quote the ROLE_TRACKS areas (interviewed role-holder-first,
+ * DECISIONS.md 2026-07-17). The role-holder's NAME never appears in identity
+ * lines - the model documents the role; names live in source attribution.
+ */
+function subjectWords(project: ProjectFile) {
+  const owner = isOwnerProject(project);
+  return {
+    owner,
+    theirWords: owner ? "the owner's own words" : "the role-holder's own words",
+    decidingTrack: owner ? 'track-5' : 'role-4',
+    scarTrack: owner ? 'track-6' : 'role-6',
+    annual: owner ? { t: 'track-1', a: 'annual' } : { t: 'role-1', a: 'annual' },
+    firstBreak: owner ? { t: 'track-1', a: 'first-break' } : { t: 'role-1', a: 'first-break' },
+    changeSlowly: owner ? { t: 'track-8', a: 'change-slowly' } : { t: 'role-7', a: 'change-slowly' },
+    neverChange: owner ? { t: 'track-8', a: 'never-change' } : { t: 'role-7', a: 'never-change' },
+    callOrder: owner ? { t: 'track-8', a: 'call-order' } : { t: 'role-7', a: 'meet-first' },
+  };
+}
+
 function header(doc: Doc, title: string, project: ProjectFile, version: number, generatedAt: string): void {
   doc.raw(`# ${title}`);
   doc.raw();
-  doc.p(`${doc.c(project.model.profile.businessName)} · prepared from the words of ${doc.c(project.model.profile.ownerName)}`);
+  if (isOwnerProject(project)) {
+    doc.p(`${doc.c(project.model.profile.businessName)} · prepared from the words of ${doc.c(project.model.profile.ownerName)}`);
+  } else {
+    doc.p(`${doc.c(project.model.profile.businessName)} · documenting the role of ${doc.c(project.model.subjectRole)}, in the words of the person who does it`);
+  }
   doc.p(`Version ${version} · generated ${new Date(generatedAt).toLocaleDateString()}`);
   doc.p(`*${DISCLAIMER}*`);
   doc.raw('---');
@@ -111,14 +140,14 @@ function executiveSummary(doc: Doc, project: ProjectFile): void {
   const total =
     e.facts.length + e.processes.length + e.relationships.length + e.decisions.length +
     e.judgments.length + e.history.length + e.systems.length + e.commitments.length + e.risks.length;
-  doc.p(`${total} knowledge items are on record: ${e.facts.length} statements in the owner's own words, ` +
+  doc.p(`${total} knowledge items are on record: ${e.facts.length} statements in ${subjectWords(project).theirWords}, ` +
     `${e.processes.length} processes, ${e.relationships.length} relationships, ${e.decisions.length} decision types, ` +
     `${e.judgments.length} judgment calls, ${e.history.length} pieces of history, ${e.systems.length} systems, ` +
     `${e.commitments.length} commitments, and ${e.risks.length} identified risks.`);
 
   doc.h2('Interview coverage');
   const mem = project.interviewMemory;
-  for (const t of TRACKS) {
+  for (const t of trackSetFor(m.subjectRole)) {
     const covered = mem?.trackProgress[t.id]?.answeredAreas.length ?? 0;
     doc.bullet(`${t.title}: ${covered} of ${t.areas.length} areas covered`);
   }
@@ -134,8 +163,8 @@ function executiveSummary(doc: Doc, project: ProjectFile): void {
 
 function handbook(doc: Doc, project: ProjectFile): void {
   const m = project.model;
-  doc.p('Everything below is in the owner\'s own words, organized by the part of the business it describes.');
-  for (const t of TRACKS) {
+  doc.p(`Everything below is in ${subjectWords(project).theirWords}, organized by the part of the ${isOwnerProject(project) ? 'business' : 'job'} it describes.`);
+  for (const t of trackSetFor(m.subjectRole)) {
     const facts = topicFacts(m, t.id);
     doc.h2(t.title);
     if (facts.length === 0) {
@@ -208,12 +237,13 @@ function decisionPlaybook(doc: Doc, project: ProjectFile): void {
       doc.p(`Worked example: ${doc.c(ex.situation)} — decided: ${doc.c(ex.whatWasDecided)}${ex.outcome ? ` — outcome: ${doc.c(ex.outcome)}` : ''}`);
     }
   }
-  doc.h2('Judgment calls - the owner\'s instincts');
+  const sw = subjectWords(project);
+  doc.h2(sw.owner ? 'Judgment calls - the owner\'s instincts' : 'Judgment calls - the role-holder\'s instincts');
   const j = m.entities.judgments;
   if (j.length === 0) doc.notCaptured();
   for (const call of j) doc.quote(call.heuristic, `${call.context ? ` — ${doc.c(call.context)}` : ''}${mark(call)}`);
-  doc.h2('In the owner\'s words on deciding');
-  quoteArea(doc, project, 'track-5');
+  doc.h2(`In ${sw.theirWords} on deciding`);
+  quoteArea(doc, project, sw.decidingTrack);
 }
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -238,8 +268,9 @@ export function factsMentioningMonth(facts: FactEntity[], month: string): FactEn
 
 function firstYear(doc: Doc, project: ProjectFile): void {
   const m = project.model;
-  doc.h2('The annual rhythm in the owner\'s words');
-  quoteArea(doc, project, 'track-1', 'annual');
+  const sw = subjectWords(project);
+  doc.h2(`The annual rhythm in ${sw.theirWords}`);
+  quoteArea(doc, project, sw.annual.t, sw.annual.a);
   doc.h2('Month by month');
   doc.p('Every statement on record that names a month, placed on the calendar. Months with nothing listed are not empty months - they are months nothing has been captured about yet.');
   for (const month of MONTH_NAMES) {
@@ -249,9 +280,9 @@ function firstYear(doc: Doc, project: ProjectFile): void {
     else for (const f of hits) doc.quote(f.statement, mark(f));
   }
   doc.h2('What to change slowly');
-  quoteArea(doc, project, 'track-8', 'change-slowly');
+  quoteArea(doc, project, sw.changeSlowly.t, sw.changeSlowly.a);
   doc.h2('What should never change');
-  quoteArea(doc, project, 'track-8', 'never-change');
+  quoteArea(doc, project, sw.neverChange.t, sw.neverChange.a);
 }
 
 function memoryArchive(doc: Doc, project: ProjectFile): void {
@@ -263,8 +294,8 @@ function memoryArchive(doc: Doc, project: ProjectFile): void {
     doc.p(`**${doc.c(item.when)}** — ${doc.c(item.whatHappened)}${mark(item)}`);
     doc.p(`What was learned: ${doc.c(item.whatWasLearned)}`);
   }
-  doc.h2('Scar tissue, in the owner\'s words');
-  quoteArea(doc, project, 'track-6');
+  doc.h2(`Scar tissue, in ${subjectWords(project).theirWords}`);
+  quoteArea(doc, project, subjectWords(project).scarTrack);
   doc.h2('Commitments and handshakes');
   const c = m.entities.commitments;
   if (c.length === 0) doc.notCaptured();
@@ -276,8 +307,9 @@ function memoryArchive(doc: Doc, project: ProjectFile): void {
 
 function emergencyBrief(doc: Doc, project: ProjectFile): void {
   const m = project.model;
+  const sw = subjectWords(project);
   doc.h2('What breaks first');
-  quoteArea(doc, project, 'track-1', 'first-break');
+  quoteArea(doc, project, sw.firstBreak.t, sw.firstBreak.a);
   doc.h2('Single points of failure on record');
   const spofs = m.entities.risks.filter((r) => r.riskKind.toLowerCase().includes('single'));
   if (spofs.length === 0) doc.notCaptured();
@@ -286,8 +318,8 @@ function emergencyBrief(doc: Doc, project: ProjectFile): void {
     if (r.impact && r.impact !== 'Not yet captured') doc.bullet(`  Impact: ${doc.c(r.impact)}`);
   }
   doc.gap();
-  doc.h2('Who to call, in the owner\'s words');
-  quoteArea(doc, project, 'track-8', 'call-order');
+  doc.h2(sw.owner ? 'Who to call, in the owner\'s words' : 'Who to call and meet first, in the role-holder\'s words');
+  quoteArea(doc, project, sw.callOrder.t, sw.callOrder.a);
   doc.h2('Key relationships to contact');
   const rels = m.entities.relationships;
   if (rels.length === 0) doc.notCaptured();
@@ -348,6 +380,23 @@ export const DELIVERABLES: Def[] = [
   { id: 'ai-export', title: 'AI-Ready Knowledge Export', render: aiExport },
 ];
 
+/**
+ * Role projects keep the same nine documents and ids (so versions and
+ * navigation behave identically) but three titles change to speak about the
+ * job rather than the founder. Same renderers - each is already
+ * subject-aware via subjectWords().
+ */
+const ROLE_TITLES: Record<string, string> = {
+  'handbook': 'The Role Handbook',
+  'first-year': 'The First Year in the Role',
+  'relationship-map': 'Relationship & Handoff Map',
+};
+
+export function deliverablesFor(project: ProjectFile): Def[] {
+  if (isOwnerProject(project)) return DELIVERABLES;
+  return DELIVERABLES.map((d) => ({ ...d, title: ROLE_TITLES[d.id] ?? d.title }));
+}
+
 export function renderDeliverable(def: Def, project: ProjectFile, version: number): Rendered {
   const generatedAt = new Date().toISOString();
   const doc = new Doc();
@@ -361,7 +410,7 @@ export function renderDeliverable(def: Def, project: ProjectFile, version: numbe
 
 export function renderPackage(project: ProjectFile): { rendered: Rendered[]; versions: Record<string, number> } {
   const versions = { ...(project.deliverableVersions ?? {}) };
-  const rendered = DELIVERABLES.map((d) => {
+  const rendered = deliverablesFor(project).map((d) => {
     versions[d.id] = (versions[d.id] ?? 0) + 1;
     return renderDeliverable(d, project, versions[d.id]);
   });

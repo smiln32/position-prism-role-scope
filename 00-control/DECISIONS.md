@@ -753,3 +753,113 @@ top, every extraction 'inferred'/low/unverified. BOTH BRANCHES ARE RETAINED
 on origin as the archive - closing a PR deletes nothing; do not delete
 feature/llm-interview-adapter. This also finally gives #3 the explicit
 status the decision log never had (flagged in the 2026-07-16 audit). | Done.
+
+2026-07-17 | Role-level interviews, role-holder first (Claude Code, owner-
+directed) | Owner's principle, verbatim: "Each person in a role should be
+interviewed and the business owner only as a fallback. Who knows the actual
+job better, right?" This inverts the build's owner-centric assumption and
+activates the subjectRole seam that has sat inert since Stage 1. Design:
+(a) ROLE_TRACKS - 7 tracks / 44 areas addressed to the person who DOES the
+job (the job as it really is; how the work gets done; people & handoffs;
+judgment calls; problems & fixes with riskKind areas mirroring track-7;
+history & quirks; handing it off). trackSetFor(subjectRole) selects the set;
+'owner' keeps the original eight untouched. (b) NO SCHEMA CHANGE: subjectRole
+(existing free-text field) carries the role title; the interviewee's NAME is
+attribution (session labels, SourceRef.detail), never identity - the model
+documents the ROLE, per the product's original boundary ("an employee may
+leave, but the knowledge associated with the role should remain"). A
+subjectName field on the frozen profile was considered and rejected as
+unnecessary unfreezing. (c) Engine methods take an optional subjectRole
+(default 'owner' - all existing call sites and behaviour unchanged);
+completion, coverage, metrics and the handbook/summary renderers judge
+against the active set. (d) NewProjectScreen asks what the project is about
+(owner's knowledge vs one specific job + role title) with role-holder-first
+"why we ask" copy; "Your name" label became "The owner's name" since the
+typist may be the operator. KNOWN INTERIM LIMITATION, logged not hidden: the
+owner-specific deliverables (First Year Without the Founder, and the
+track-5/6/8 quote sections of Decision Playbook / Memory Archive / Emergency
+Brief) reference owner track ids, so for role projects those sections render
+"not asked" - honest but thin. A role-appropriate deliverable set is the
+follow-up (with the PDF work), not a silent gap. 131 -> 136 tests. | Done.
+
+2026-07-17 | Data custody protocol + deletion caution flow (Claude Code,
+owner-directed) | Owner approved the per-engagement custody protocol
+(vault-first, export, VERIFY, then delete; encrypted or client-custodied
+delivery drives; keep-nothing vs keep-encrypted decided in the engagement
+letter) and directed: "I need the app to clearly identify and caution when I
+request any files be deleted." Finding: the app had NO deletion in its UI at
+all - ProjectStore.remove() existed, tested, wired to nothing - so the
+custody protocol's final step was impossible without devtools. Built
+DeleteProjectControl on each home-screen project card: names exactly what is
+being deleted, warns that the working copy AND the automatic backup slot go
+together, states what is NOT touched (exported files, printed reports),
+pushes export-and-verify first (with an "Export a copy now" button in the
+flow), and keeps the destructive button DISABLED until the operator attests
+to a verified exported copy. Cancel resets the attestation. Deliberate
+friction, in keeping with rule 9's spirit: this is the one place captured
+knowledge can leave the store. Protocol written to 08-docs/CUSTODY.md
+(including the honest limits: app deletion is not forensic erasure, which is
+why vault-first is step 1; plaintext export is the drive's weak point);
+HELP.md gained the user-facing paragraph. 136 -> 138 tests, incl. the
+disabled-until-attested gate and primary+backup removal. | Done.
+
+2026-07-17 | Real PDF export + first runtime dependency (Claude Code, owner-
+approved plan) | The report IS the product in the service model, and browser
+"Print to PDF" is not a client deliverable - PATH-TO-SHIP Tier 2, promoted.
+DEPENDENCY DECISION (spec: "no unnecessary dependencies" - this one is
+necessary): pdfmake 0.3.11. Considered: hand-rolled PDF writer (rejected:
+accurate glyph-width tables cannot be reproduced from memory without
+fabrication risk; Courier-only would dodge that but reads as a typewriter,
+not a professional deliverable); jsPDF (rejected: manual text placement);
+@react-pdf (rejected: heavier, own component world). Two mitigations make
+pdfmake nearly free: (a) it is imported ONLY via dynamic import inside
+generatePdfBytes(), so it lives in lazy chunks (pdfmake 346KB gzip + Times
+AFM 49KB + Courier 12KB) fetched on the first PDF click - the initial bundle
+is unchanged by it; (b) the PDF uses the STANDARD-14 Times/Courier fonts via
+pdfmake's addFontContainer (AFM metrics only, no TTF embedding - verified by
+probe before wiring), which matches the visual system's serif printed-page
+feel and keeps output small. The converter (pdf.ts markdownToPdfContent) is
+PURE, knows only the markdown subset our own Doc generator emits, and never
+sees the model - it reshapes exactly what the zero-invention audit already
+covers. UI: per-document "PDF" buttons and "Download the whole package
+(PDF)" (one file, page break per document) on DeliverablesScreen, with a
+busy state and a markdown fallback message on failure. Tests: converter
+unit tests + a REAL-BYTES test running pdfmake headless over the full
+fixture package (asserts %PDF header, multi-page, Times-Roman present,
+Roboto absent). | Done.
+
+2026-07-17 | Role-project deliverables (Claude Code) | Closes the interim
+limitation logged with the role-interviews decision: role projects no longer
+render owner-shaped documents full of "not asked". Same nine documents, same
+ids (versions and navigation unchanged); three titles speak about the job
+(The Role Handbook; The First Year in the Role; Relationship & Handoff Map);
+each renderer is subject-aware through one subjectWords() helper - the
+header line becomes "documenting the role of X, in the words of the person
+who does it" (X = subjectRole, registered with the audit; the role-holder's
+NAME never appears in identity lines, per the attribution decision), and the
+quoted areas map to ROLE_TRACKS (deciding: role-4; scar tissue: role-6;
+annual/first-break: role-1; change-slowly/never-change/meet-first: role-7).
+Owner projects are unchanged - subjectWords returns every original string.
+Tests: 138 at the prior commit -> 150 with the PDF and role-deliverable
+suites (the first draft of this entry claimed 157 - a miscount, corrected
+before it could mislead; the commit message says 157 too and commit messages
+are immutable, so this line is the correction of record). | Done.
+
+2026-07-17 | Operator polish: persistent name + structuring workbench (Claude
+Code) | Completes the approved pre-pilot batch (role interviews, deletion
+caution, PDF export, this). Two pieces. (a) ProjectFile gains operatorName? -
+optional and additive like every prior extension; app-level bookkeeping, NOT
+captured knowledge. It only seeds the "Who is entering this?" control when
+flipping to operator mode, so the name survives between sittings; the name
+that matters is still written into each entity's SourceRef at the moment of
+entry, and saving the name does not touch the model (tested: model reference
+unchanged). (b) TranscriptSourcePicker - the structuring workbench. Operator
+mode shows the verbatim transcript (newest first, filterable, capped at 100
+shown with the cap reported, each answer under its interview question via
+trackById), with "Use as source": the picked fact's id + source detail flow
+into Attribution.structuredFrom, so a structured commitment records e.g.
+"Structured by J. Smith from fact_x (Track 3 (handshake), answer 2) - not
+yet confirmed by the owner". The selection persists across adds (one answer
+often yields several entries - the Henderson answer held two commitments)
+and is cleared explicitly. Owner mode never sees the workbench. 150 -> 154
+tests. | Done.

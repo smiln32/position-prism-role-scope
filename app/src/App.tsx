@@ -159,6 +159,7 @@ function HomeScreen({
   store: ProjectStore; go: (s: Screen) => void; security: Security;
 }) {
   const [error, setError] = useState('');
+  const [deletedNote, setDeletedNote] = useState('');
   const projects = store.list();
 
   const onImport = async (f: File | undefined) => {
@@ -190,15 +191,20 @@ function HomeScreen({
       {projects.length === 0 && (
         <p className="muted">No projects yet. Start one below.</p>
       )}
+      {deletedNote && <p className="small muted">{deletedNote}</p>}
       {projects.map((p) => (
         <div className="card" key={p.projectId}>
           <p style={{ marginBottom: '0.35rem' }}>{p.businessName}</p>
           <p className="small muted" style={{ marginBottom: '0.6rem' }}>
             {p.sessionCount} session{p.sessionCount === 1 ? '' : 's'} · last saved {fmt(p.updatedAt)}
           </p>
-          <button onClick={() => go({ name: 'project', projectId: p.projectId })}>
-            Open
-          </button>
+          <div className="row">
+            <button onClick={() => go({ name: 'project', projectId: p.projectId })}>
+              Open
+            </button>
+            <DeleteProjectControl project={p} store={store}
+              onDeleted={() => setDeletedNote(`"${p.businessName}" was deleted from this computer.`)} />
+          </div>
         </div>
       ))}
 
@@ -227,6 +233,70 @@ function HomeScreen({
 }
 
 const RED = '#8b2f2f';
+
+/**
+ * Owner-directed project deletion, gated the way the custody protocol demands
+ * (08-docs/CUSTODY.md; owner directive 2026-07-17: "clearly identify and
+ * caution when I request any files be deleted"). Deletion must name exactly
+ * what it deletes, say what it does NOT touch, push the operator to export
+ * and VERIFY a copy first, and stay disabled until they attest to it. This is
+ * the only place captured knowledge can leave the computer's store - it earns
+ * the friction.
+ */
+function DeleteProjectControl({ project, store, onDeleted }: {
+  project: { projectId: string; businessName: string; sessionCount: number; updatedAt: string };
+  store: ProjectStore;
+  onDeleted: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const exportCopy = () => {
+    const safe = project.businessName.replace(/[^A-Za-z0-9 ]/g, '').trim().replace(/ +/g, '-');
+    downloadText(store.exportJson(project.projectId), `Successor-${safe || project.projectId}.json`);
+  };
+
+  if (!open) {
+    return (
+      <button className="quiet" onClick={() => setOpen(true)}>
+        Delete from this computer…
+      </button>
+    );
+  }
+  return (
+    <div style={{ flexBasis: '100%', borderTop: '1px solid var(--rule, #dddddd)', marginTop: '0.6rem', paddingTop: '0.6rem' }}>
+      <p className="small" style={{ color: RED, marginBottom: '0.4rem' }}>
+        <strong>You are about to delete &ldquo;{project.businessName}&rdquo; from this computer.</strong>
+      </p>
+      <p className="small" style={{ marginBottom: '0.4rem' }}>
+        This removes the working copy <strong>and its automatic backup</strong> stored
+        here. It cannot be undone. Files already exported to a drive, and printed
+        reports, are not touched — only this computer&apos;s copy is deleted.
+      </p>
+      <p className="small" style={{ marginBottom: '0.4rem' }}>
+        Before deleting: export this project and make sure the file restores
+        (&ldquo;Restore from a project file&rdquo; on this screen). Deleting against an
+        unverified copy is how knowledge is lost for good.
+      </p>
+      <button className="quiet" onClick={exportCopy}>Export a copy now</button>
+      <label className="small" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', margin: '0.6rem 0' }}>
+        <input type="checkbox" checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+          aria-label={`I have a verified exported copy of ${project.businessName}`} />
+        I have an exported copy of this project and have checked that it restores.
+      </label>
+      <div className="row">
+        <button style={{ borderColor: RED, color: RED }} disabled={!confirmed}
+          onClick={() => { store.remove(project.projectId); onDeleted(); }}>
+          Delete &ldquo;{project.businessName}&rdquo;
+        </button>
+        <button className="quiet" onClick={() => { setOpen(false); setConfirmed(false); }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function downloadText(text: string, filename: string): void {
   const blob = new Blob([text], { type: 'application/json' });
@@ -417,11 +487,21 @@ function NewProjectScreen({ store, go }: { store: ProjectStore; go: (s: Screen) 
   const [industry, setIndustry] = useState('');
   const [employeeCount, setEmployeeCount] = useState('');
   const [exitWindow, setExitWindow] = useState('');
+  // What this project documents: the owner's own knowledge, or one specific
+  // job - interviewed role-holder-first (DECISIONS.md 2026-07-17). The role
+  // title becomes the model's subjectRole; the person interviewed is named in
+  // session labels and source details, never in the model's identity.
+  const [subject, setSubject] = useState<'owner' | 'role'>('owner');
+  const [roleTitle, setRoleTitle] = useState('');
   const [error, setError] = useState('');
 
   const create = () => {
     if (!businessName.trim() || !ownerName.trim()) {
-      setError('The business name and your name are the only two things we need to begin.');
+      setError('The business name and the owner\'s name are the only two things we need to begin.');
+      return;
+    }
+    if (subject === 'role' && !roleTitle.trim()) {
+      setError('Name the role this project documents - "Bookkeeper", "Shop foreman", "Office manager".');
       return;
     }
     const project: ProjectFile = {
@@ -432,7 +512,7 @@ function NewProjectScreen({ store, go }: { store: ProjectStore; go: (s: Screen) 
         industry: industry.trim() || undefined,
         employeeCount: employeeCount.trim() || undefined,
         plannedExitWindow: exitWindow.trim() || undefined,
-      }),
+      }, subject === 'role' ? roleTitle.trim() : 'owner'),
       sessions: [],
     };
     store.save(project);
@@ -454,9 +534,39 @@ function NewProjectScreen({ store, go }: { store: ProjectStore; go: (s: Screen) 
         <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
       </label>
       <label className="field">
-        <span>Your name</span>
+        <span>The owner&apos;s name</span>
         <input type="text" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
       </label>
+
+      <div className="field">
+        <span>What is this project about?</span>
+        <label className="small" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+          <input type="radio" name="subject" checked={subject === 'owner'}
+            onChange={() => setSubject('owner')} />
+          The owner&apos;s own knowledge - the full succession interview
+        </label>
+        <label className="small" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+          <input type="radio" name="subject" checked={subject === 'role'}
+            onChange={() => setSubject('role')} />
+          One specific job, answered by the person who does it
+        </label>
+      </div>
+      {subject === 'role' && (
+        <>
+          <label className="field">
+            <span>The role this project documents</span>
+            <input type="text" value={roleTitle} placeholder='e.g. "Bookkeeper"'
+              onChange={(e) => setRoleTitle(e.target.value)} />
+          </label>
+          <p className="why">
+            Why the person, not the owner: whoever does the job every day knows
+            it best - the workarounds, the judgment calls, what the written
+            procedures get wrong. Interview them; the owner fills gaps and
+            confirms afterward. This project documents the role itself, so the
+            knowledge stays useful even after the person moves on.
+          </p>
+        </>
+      )}
       <label className="field">
         <span>What the business does <span className="muted">(optional)</span></span>
         <input type="text" value={industry} onChange={(e) => setIndustry(e.target.value)} />

@@ -31,16 +31,24 @@ export function newId(prefix: string): string {
   return `${prefix}_${rand}`;
 }
 
-/** Create an empty model. */
+/**
+ * Create an empty model. `subjectRole` is 'owner' for the owner's own
+ * interview (Successor), or a role title ("Bookkeeper", "Shop foreman") when
+ * the model documents a specific job, interviewed role-holder-first (Role
+ * DNA; DECISIONS.md 2026-07-17). The interviewee's NAME is attribution
+ * (session labels, source details), never identity - the model documents the
+ * role, not the person.
+ */
 export function createEmptyModel(
   projectId: string,
   profile: ProjectProfile,
+  subjectRole = 'owner',
 ): KnowledgeModel {
   const ts = nowIso();
   return {
     schemaVersion: SCHEMA_VERSION,
     projectId,
-    subjectRole: 'owner',
+    subjectRole: subjectRole.trim() || 'owner',
     profile,
     createdAt: ts,
     updatedAt: ts,
