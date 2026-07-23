@@ -25,6 +25,25 @@ DECISIONS.md 2026-07-17.
    published Stage 7 scoring formula (04-model-views/README.md)
 9. AI-Ready Knowledge Export - the lossless model JSON
 
+## The Role Package (role projects only) - since 2026-07-23
+Three additional reports render ONLY for role projects (subjectRole != 'owner'),
+appended after the nine so ids never collide and versioning is unchanged; owner
+projects never see them (DECISIONS.md 2026-07-23):
+
+10. Job Description - what the role is, what only this person can do, core
+    responsibilities (processes), decisions owned, people/handoffs, systems and
+    tools, the unwritten parts, and a folded-in **Commitment Register**
+11. Standard Operating Procedures - one procedure per process on record
+    (purpose, frequency, numbered steps, dependencies, failure points, who else
+    knows), plus the role-holder's verbatim words on how the work gets done
+12. Training & Onboarding Guide - first ninety days, who to meet, what to learn
+    first, judgment to absorb, change-slowly / never-change, advice, old wounds
+
+Same integrity mechanism and disclaimer as the nine; the new quoteAreas() helper
+gives each grouped section a single honest empty-state line ("Not yet captured"
+vs "not asked yet"). PDF/markdown export is generic, so these need no pdf.ts
+change.
+
 ## Integrity mechanism
 Renderers register every model-derived string through Doc.c(); the automated
 audit (auditRendered) verifies each against the model's field values. The

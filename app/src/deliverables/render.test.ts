@@ -1,12 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
-  DELIVERABLES, renderPackage, renderDeliverable, auditRendered,
-  DISCLAIMER, NOT_CAPTURED, NOT_ASKED, factsMentioningMonth,
+  DELIVERABLES, ROLE_PACKAGE, deliverablesFor, renderPackage, renderDeliverable,
+  auditRendered, DISCLAIMER, NOT_CAPTURED, NOT_ASKED, factsMentioningMonth,
 } from './render';
 import { analyzeDocument } from '../analysis/extract';
 import type { FactEntity } from '../knowledge-model/schema';
 import { fixtureModel } from '../knowledge-model/fixture';
 import { createEmptyModel } from '../knowledge-model/model';
+import {
+  addProcess, addCommitment, addSystem, addRelationship, addDecision,
+  addJudgment, addHistory,
+} from '../knowledge-model/capture';
 import { RuleBasedEngine } from '../interview/engine';
 import { PROJECT_FORMAT_VERSION, type ProjectFile } from '../project/store';
 
@@ -254,7 +258,11 @@ describe('Role-project deliverables', () => {
     expect(byId['handbook']).toBe('The Role Handbook');
     expect(byId['first-year']).toBe('The First Year in the Role');
     expect(byId['risk-report']).toBe('Knowledge Risk Report');
-    expect(rendered.length).toBe(9);
+    // The shared nine, plus the three-report Role Package appended after them.
+    expect(rendered.length).toBe(12);
+    expect(byId['job-description']).toBe('Job Description');
+    expect(byId['sops']).toBe('Standard Operating Procedures');
+    expect(byId['training-guide']).toBe('Training & Onboarding Guide');
   });
 
   it('the header names the role, not a person, and audits clean', () => {
@@ -280,5 +288,131 @@ describe('Role-project deliverables', () => {
     const titles = renderPackage(project).rendered.map((d) => d.title);
     expect(titles).toContain("The Successor's Handbook");
     expect(titles).toContain('First Year Without the Founder');
+  });
+});
+
+/**
+ * The Role Package (2026-07-23). Three role-only reports - Job Description,
+ * Standard Operating Procedures (one per process), Training & Onboarding Guide,
+ * with a Commitment Register folded into the Job Description. They render
+ * exclusively from the model like every other deliverable, so the same
+ * zero-invention audit must hold. Owner projects never receive them. See
+ * DECISIONS.md 2026-07-23.
+ */
+describe('The Role Package', () => {
+  // A role project rich enough to exercise every section: process (with steps,
+  // dependencies, failure points, who-else-knows), commitment, system,
+  // relationship, decision, judgment, history, plus verbatim role-track facts.
+  const richRoleProject = (): ProjectFile => {
+    const engine = new RuleBasedEngine();
+    let memory = engine.createMemory();
+    let model = createEmptyModel('role-pkg',
+      { businessName: 'Hartwell (FIXTURE)', ownerName: 'Ray (fictional)' }, 'Accounts Payable Clerk');
+    const answer = (track: string, text: string) => {
+      const r = engine.ingestAnswer(memory, model, 's1', track, text);
+      memory = r.memory; model = r.model;
+    };
+    answer('role-1', 'First thing every morning I reconcile the bank feed before anyone else is in the building.');
+    answer('role-7', 'Meet the two biggest vendors in the first week, and never let a discount window lapse.');
+    model = addProcess(model, {
+      name: 'Weekly vendor payment run',
+      purpose: 'Pay approved invoices before their discount windows close',
+      frequency: 'weekly',
+      steps: ['Pull the approved-invoice queue', 'Match each to its purchase order', 'Release the batch on Thursday'],
+      dependencies: ['The approvals inbox is cleared by Wednesday'],
+      failurePoints: ['A missing purchase order silently holds an invoice back'],
+      whoElseKnows: ['The controller, partially'],
+    });
+    model = addCommitment(model, {
+      withWhom: 'Ridgeline Supply',
+      whatWasPromised: 'Payment within ten days in exchange for a two percent discount',
+      direction: 'owed-by-business',
+      writtenDown: false,
+    });
+    model = addSystem(model, {
+      name: 'The accounting package',
+      kind: 'software',
+      whatItDoes: 'Holds the ledger and cuts the payment batches',
+      accessHeldBy: 'The clerk and the controller',
+    });
+    model = addRelationship(model, {
+      who: 'Ridgeline Supply', category: 'vendor',
+      whatTheyExpect: 'A call before any short payment',
+    });
+    model = addDecision(model, {
+      name: 'Whether to short-pay a disputed invoice',
+      howDecided: 'Call the vendor first, then hold only the disputed lines',
+    });
+    model = addJudgment(model, {
+      heuristic: 'When a vendor suddenly wants payment early, something is wrong on their end',
+    });
+    model = addHistory(model, {
+      whatHappened: 'A duplicate payment went out in the first month',
+      when: '2019', whatWasLearned: 'Always match to the purchase order before releasing',
+    });
+    return { formatVersion: PROJECT_FORMAT_VERSION, model, sessions: [], interviewMemory: memory };
+  };
+
+  it('appears only for role projects, never for the owner', () => {
+    const ownerIds = deliverablesFor({
+      formatVersion: PROJECT_FORMAT_VERSION,
+      model: createEmptyModel('own', { businessName: 'Owner Co', ownerName: 'Owner' }),
+      sessions: [],
+    }).map((d) => d.id);
+    for (const d of ROLE_PACKAGE) expect(ownerIds).not.toContain(d.id);
+
+    const roleIds = deliverablesFor(richRoleProject()).map((d) => d.id);
+    for (const d of ROLE_PACKAGE) expect(roleIds).toContain(d.id);
+  });
+
+  it('ZERO-INVENTION AUDIT holds across all three reports', () => {
+    const project = richRoleProject();
+    const { rendered } = renderPackage(project);
+    for (const id of ['job-description', 'sops', 'training-guide']) {
+      const doc = rendered.find((d) => d.id === id)!;
+      expect(auditRendered(doc, project.model), `${id} invented content`).toEqual([]);
+      expect(doc.content.length).toBeGreaterThanOrEqual(2);
+      expect(doc.markdown).toContain(DISCLAIMER);
+    }
+  });
+
+  it('the Job Description pulls real fields and folds in the Commitment Register', () => {
+    const md = renderPackage(richRoleProject()).rendered.find((d) => d.id === 'job-description')!.markdown;
+    expect(md).toContain('documenting the role of Accounts Payable Clerk');
+    expect(md).toContain('reconcile the bank feed');               // role-1 verbatim
+    expect(md).toContain('Weekly vendor payment run');             // process as responsibility
+    expect(md).toContain('Whether to short-pay a disputed invoice'); // decision owned
+    expect(md).toContain('Commitment Register');
+    expect(md).toContain('With Ridgeline Supply: Payment within ten days'); // folded commitment
+  });
+
+  it('the SOPs render one procedure per process, with numbered steps', () => {
+    const md = renderPackage(richRoleProject()).rendered.find((d) => d.id === 'sops')!.markdown;
+    expect(md).toContain('## Weekly vendor payment run');
+    expect(md).toContain('- 1. Pull the approved-invoice queue');
+    expect(md).toContain('- 3. Release the batch on Thursday');
+    expect(md).toContain('A missing purchase order silently holds an invoice back'); // failure point
+  });
+
+  it('the Training Guide draws the first ninety days, judgment, and history', () => {
+    const md = renderPackage(richRoleProject()).rendered.find((d) => d.id === 'training-guide')!.markdown;
+    expect(md).toContain('Meet the two biggest vendors in the first week'); // role-7 first steps
+    expect(md).toContain('When a vendor suddenly wants payment early');      // judgment
+    expect(md).toContain('A duplicate payment went out in the first month'); // history
+  });
+
+  it('an unstarted role project invents nothing and says so honestly', () => {
+    const project: ProjectFile = {
+      formatVersion: PROJECT_FORMAT_VERSION,
+      model: createEmptyModel('role-empty',
+        { businessName: 'Empty Role Co (FIXTURE)', ownerName: 'No One (fixture)' }, 'Dispatcher'),
+      sessions: [],
+    };
+    const { rendered } = renderPackage(project);
+    for (const id of ['job-description', 'sops', 'training-guide']) {
+      const doc = rendered.find((d) => d.id === id)!;
+      expect(auditRendered(doc, project.model)).toEqual([]);
+      expect(doc.markdown).toContain(NOT_CAPTURED);
+    }
   });
 });

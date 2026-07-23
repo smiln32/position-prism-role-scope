@@ -899,3 +899,33 @@ normal runs. 154 -> 166 tests + 1 guarded live. Frozen schema untouched;
 initial bundle 70.0 -> 72.7 KB gzip (the llm module + panel; accepted -
 lazy-loading a 3KB module bought nothing). | Done pending the owner's live
 run.
+
+---
+
+2026-07-23 | Expansion | The Role Package: three role-only deliverables added
+- Job Description, Standard Operating Procedures (one per process), and
+Training & Onboarding Guide - with a Commitment Register folded into the Job
+Description. Proposed in HANDOFF-2026-07-17 ("Open decision: the Role
+Package"), APPROVED by the owner this session ("create the role package
+reports"). Rationale: in the service model a role engagement should end with
+the client holding job-shaped documents, not only the succession-shaped nine;
+the friend's accounts-payable product test is the immediate use. Scope and
+constraints: (a) role-only - deliverablesFor() appends them ONLY for non-owner
+projects, after the shared nine, so ids never collide, per-doc versioning is
+unchanged, and owner projects are byte-for-byte unaffected (existing test still
+green). (b) Zero invention preserved - each renderer registers only verbatim
+model strings via Doc.c(), so auditRendered covers them with no change; a new
+richRoleProject fixture drives a full audit-clean assertion, and an unstarted
+role project asserts "Not yet captured". (c) A new quoteAreas() helper gathers
+several related areas of one track under one heading with a SINGLE honest
+empty-state line ("Not yet captured" vs "not asked yet" via interviewMemory),
+so a barely-started report does not read as a wall of identical empties.
+(d) The Commitment Register is a SECTION of the Job Description, not a fourth
+document - matches the handoff's "+ fold in" and keeps the count at three new
+reports. (e) PDF/markdown/read paths are generic over Rendered[], so the three
+reports export with no pdf.ts change; DeliverablesScreen's hardcoded "nine
+documents" copy is now computed from deliverablesFor(project).length (9 owner /
+12 role). Frozen schema untouched. Org-level reports (SPOF register,
+contradiction map, access inventory) remain DEFERRED - they need the
+multi-model reader, never mergeModels (see HANDOFF-2026-07-17). Suite 166 ->
+172 (+6) + 1 guarded live; build + lint clean. | Done.

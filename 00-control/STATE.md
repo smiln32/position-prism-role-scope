@@ -1,6 +1,6 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-16
+Last updated: 2026-07-23
 Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
 Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; PRs #7/#9/#10 merged
 2026-07-15 (perf code-split, scroll-to-top UX fix, README + .env gitignore).
@@ -235,3 +235,21 @@ Assisted interviewing built (llm.ts, 166 tests + guarded live test);
 awaiting the owner's live key run, then merge. Role Package reports
 (Job Description / SOPs / Training Guide / Commitment Register) proposed,
 awaiting owner go. PR #13 open; assisted-interviewing branch stacked on it.
+
+2026-07-23 (feature/assisted-interviewing branch): the Role Package APPROVED
+and BUILT (DECISIONS.md 2026-07-23). Three role-only deliverables now render
+for role projects, appended after the shared nine (owner projects unchanged):
+- Job Description (with the Commitment Register folded in), Standard Operating
+  Procedures (one per process, numbered steps), Training & Onboarding Guide.
+- render.ts: new renderers + a quoteAreas() helper (one honest empty-state line
+  per grouped section); deliverablesFor() appends ROLE_PACKAGE for non-owner
+  projects only. Zero-invention audit covers them unchanged (only verbatim
+  model strings via Doc.c()). PDF/markdown/read paths are generic - no pdf.ts
+  change. DeliverablesScreen "nine documents" copy now computed (9 owner / 12
+  role). Frozen schema untouched.
+- Tests: +6 (a richRoleProject fixture, full audit-clean assertion, per-report
+  field checks, owner-exclusion, unstarted-project honesty). Suite 166 -> 172
+  (+ 1 guarded live still skipped). Build + lint clean.
+- Still open, unchanged by this session: the owner's assisted-path live run
+  (deliberately not the focus this session), then merge of #13 + the stacked
+  branch; org-level reports remain deferred (need the multi-model reader).
