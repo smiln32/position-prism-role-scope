@@ -75,7 +75,7 @@ not a missing feature. Tracked as ICM-09 in `ICM-AUDIT-LOG.md`.
 | Product spec (source of truth) | `00-control/MASTER-SPEC.md` |
 | **Project memory** — why anything is the way it is | `00-control/DECISIONS.md` |
 | Current build state | `00-control/STATE.md` |
-| Latest session snapshot | `00-control/HANDOFF-2026-07-16.md` |
+| Latest session snapshot | `00-control/HANDOFF-2026-07-24.md` |
 | What to pick up next | `00-control/NEXT-STEPS.md` |
 | How to undo a push (push ledger) | `00-control/PUSH-LOG.md` (written by `push-log.ps1`) |
 | Roadmap + non-negotiables (long form) | `00-control/EXPANSION-HANDOFF.md` |
