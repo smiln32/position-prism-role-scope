@@ -1,6 +1,6 @@
 # STATE.md - Project State
 
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 Current stage: Stage 8 (Hardening & Acceptance) - COMPLETE. BUILD COMPLETE.
 Expansion ongoing: PRs #4/#5/#6 merged 2026-07-13; PRs #7/#9/#10 merged
 2026-07-15 (perf code-split, scroll-to-top UX fix, README + .env gitignore).
@@ -240,3 +240,22 @@ deliverables now render for role projects, appended after the shared nine
 - The LLM adapter (assisted interviewing) stays behind on
   feature/assisted-interviewing, awaiting the owner's live-key run; org-level
   reports remain deferred (need the multi-model reader).
+
+2026-07-24 (docs/session-handoff-2026-07-24, off master@bc875d7): session
+wrap-up. Three PRs merged to master this session - #13 role interviews (154
+tests), #14 the Role Package (154 -> 160), #15 session tooling. master green
+at 160 tests. HANDOFF-2026-07-24.md is the live snapshot (supersedes the
+2026-07-17 one, which lives only on the assisted branch); CONTEXT.md's snapshot
+pointer updated to it (it had still pointed at 2026-07-16 on master).
+- The Role Package shipped INDEPENDENTLY of the assisted branch (split onto
+  feature/role-package) so it did not wait on the LLM live run.
+- Session tooling on master: where-we-stand.ps1 (WHERE-WE-STAND.md snapshot,
+  gitignored) and push-log.ps1 + PUSH-LOG.md (reversible push ledger).
+- The original build prompt was archived then REMOVED at owner request; it now
+  lives only on the owner's laptop (outside the repo), gone from every branch.
+- feature/assisted-interviewing (LLM adapter) is the sole open feature, pending
+  the owner's live-key run. It still re-contains the Role Package + tooling
+  (now on master under different SHAs); when merging, bring only the adapter
+  files onto a fresh branch off master - see HANDOFF-2026-07-24.md.
+Owner's part: the live-key run, plus the real-world track (exit-planner,
+engagement letter, friend's AP test, then the pilot).
